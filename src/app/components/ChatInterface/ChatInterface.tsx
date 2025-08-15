@@ -17,7 +17,7 @@ import type { SubAgent, TodoItem, ToolCall } from "../../types/types";
 import { useChat } from "../../hooks/useChat";
 import styles from "./ChatInterface.module.scss";
 import { Message } from "@langchain/langgraph-sdk";
-import { extractStringFromMessageContent } from "../../utils/utils";
+import { extractStringFromMessageContent, generateToolCallId } from "../../utils/utils";
 
 interface ChatInterfaceProps {
   threadId: string | null;
@@ -93,93 +93,67 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
     const hasMessages = messages.length > 0;
 
     const processedMessages = useMemo(() => {
-      /* 
-    1. Loop through all messages
-    2. For each AI message, add the AI message, and any tool calls to the messageMap
-    3. For each tool message, find the corresponding tool call in the messageMap and update the status and output
-    */
-      const messageMap = new Map<string, any>();
-      messages.forEach((message: Message) => {
-        if (message.type === "ai") {
-          const toolCallsInMessage: any[] = [];
-          if (
-            message.additional_kwargs?.tool_calls &&
-            Array.isArray(message.additional_kwargs.tool_calls)
-          ) {
-            toolCallsInMessage.push(...message.additional_kwargs.tool_calls);
-          } else if (message.tool_calls && Array.isArray(message.tool_calls)) {
-            toolCallsInMessage.push(
-              ...message.tool_calls.filter(
-                (toolCall: any) => toolCall.name !== "",
-              ),
-            );
-          } else if (Array.isArray(message.content)) {
-            const toolUseBlocks = message.content.filter(
-              (block: any) => block.type === "tool_use",
-            );
-            toolCallsInMessage.push(...toolUseBlocks);
-          }
-          const toolCallsWithStatus = toolCallsInMessage.map(
-            (toolCall: any) => {
-              const name =
-                toolCall.function?.name ||
-                toolCall.name ||
-                toolCall.type ||
-                "unknown";
-              const args =
-                toolCall.function?.arguments ||
-                toolCall.args ||
-                toolCall.input ||
-                {};
-              return {
-                id: toolCall.id || `tool-${Math.random()}`,
-                name,
-                args,
-                status: "pending" as const,
-              } as ToolCall;
-            },
-          );
-          messageMap.set(message.id!, {
-            message,
-            toolCalls: toolCallsWithStatus,
-          });
-        } else if (message.type === "tool") {
-          const toolCallId = message.tool_call_id;
-          if (!toolCallId) {
-            return;
-          }
-          for (const [, data] of messageMap.entries()) {
-            const toolCallIndex = data.toolCalls.findIndex(
-              (tc: any) => tc.id === toolCallId,
-            );
-            if (toolCallIndex === -1) {
-              continue;
-            }
+    const messageMap = new Map<string, { message: Message; toolCalls: ToolCall[]; showAvatar: boolean }>();
+
+    messages.forEach((message, index) => {
+      if (message.type === "ai") {
+        const toolCallsInMessage: any[] = [];
+        if (message.additional_kwargs?.tool_calls && Array.isArray(message.additional_kwargs.tool_calls)) {
+          toolCallsInMessage.push(...message.additional_kwargs.tool_calls);
+        } else if (message.tool_calls && Array.isArray(message.tool_calls)) {
+          toolCallsInMessage.push(...message.tool_calls.filter((toolCall: any) => toolCall.name !== ""));
+        } else if (Array.isArray(message.content)) {
+          const toolUseBlocks = message.content.filter((block: any) => block.type === "tool_use");
+          toolCallsInMessage.push(...toolUseBlocks);
+        }
+
+        const toolCallsWithStatus = toolCallsInMessage.map((toolCall: any) => ({
+          id: generateToolCallId(toolCall),
+          name: toolCall.function?.name || toolCall.name || toolCall.type || "unknown",
+          args: toolCall.function?.arguments || toolCall.args || toolCall.input || {},
+          status: "pending" as const,
+        } as ToolCall));
+
+        messageMap.set(message.id!, {
+          message,
+          toolCalls: toolCallsWithStatus,
+          showAvatar: false, // Will be updated later
+        });
+      } else if (message.type === "tool") {
+        const toolCallId = message.tool_call_id;
+        if (!toolCallId) {
+          return;
+        }
+        for (const [, data] of messageMap.entries()) {
+          const toolCallIndex = data.toolCalls.findIndex((tc) => tc.id === toolCallId);
+          if (toolCallIndex !== -1) {
             data.toolCalls[toolCallIndex] = {
               ...data.toolCalls[toolCallIndex],
               status: "completed" as const,
-              // TODO: Make this nicer
               result: extractStringFromMessageContent(message),
             };
             break;
           }
-        } else if (message.type === "human") {
-          messageMap.set(message.id!, {
-            message,
-            toolCalls: [],
-          });
         }
-      });
-      const processedArray = Array.from(messageMap.values());
-      return processedArray.map((data, index) => {
-        const prevMessage =
-          index > 0 ? processedArray[index - 1].message : null;
-        return {
-          ...data,
-          showAvatar: data.message.type !== prevMessage?.type,
-        };
-      });
-    }, [messages]);
+      } else if (message.type === "human") {
+        messageMap.set(message.id!, {
+          message,
+          toolCalls: [],
+          showAvatar: false, // Will be updated later
+        });
+      }
+    });
+
+    const processedArray = Array.from(messageMap.values());
+
+    return processedArray.map((data, index) => {
+      const prevMessage = index > 0 ? processedArray[index - 1].message : null;
+      return {
+        ...data,
+        showAvatar: data.message.type !== prevMessage?.type,
+      };
+    });
+  }, [messages]);
 
     return (
       <div className={styles.container}>
