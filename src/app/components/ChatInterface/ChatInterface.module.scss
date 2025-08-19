@@ -169,21 +169,33 @@
   border-top: 1px solid var(--color-border);
   background-color: var(--color-background);
   flex-shrink: 0;
+  align-items: flex-end;
 }
 
 .input {
   flex: 1;
-  padding-left: 10px;
+  padding: 10px;
+  min-height: 40px;
+  max-height: 200px;
+  line-height: 1.5;
+  overflow-y: auto;
+  
+  &::-webkit-scrollbar {
+    width: 0;
+    display: none;
+  }
 }
 
 .sendButton {
   padding: $spacing-sm $spacing-md;
+  margin-bottom: 2px;
 }
 
 .stopButton {
   padding: $spacing-sm $spacing-md;
   background-color: var(--color-error);
   color: white;
+  margin-bottom: 2px;
 
   &:hover {
     opacity: 0.9;
