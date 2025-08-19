@@ -9,8 +9,8 @@ import React, {
   FormEvent,
 } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Send, Bot, LoaderCircle, SquarePen, History, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Send, Bot, LoaderCircle, SquarePen, History } from "lucide-react";
 import { ChatMessage } from "../ChatMessage/ChatMessage";
 import { ThreadHistorySidebar } from "../ThreadHistorySidebar/ThreadHistorySidebar";
 import type { SubAgent, TodoItem, ToolCall } from "../../types/types";
@@ -45,7 +45,9 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
   }) => {
     const [input, setInput] = useState("");
     const [isThreadHistoryOpen, setIsThreadHistoryOpen] = useState(false);
+    const [isComposing, setIsComposing] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const { messages, isLoading, sendMessage, stopStream } = useChat(
       threadId,
@@ -58,16 +60,47 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    // Auto-resize textarea
+    useEffect(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      }
+    }, [input]);
+
     const handleSubmit = useCallback(
-      (e: FormEvent) => {
-        e.preventDefault();
+      (e?: FormEvent) => {
+        e?.preventDefault();
         const messageText = input.trim();
         if (!messageText || isLoading) return;
         sendMessage(messageText);
         setInput("");
+        // Reset textarea height after sending
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+        }
       },
       [input, isLoading, sendMessage],
     );
+
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // Don't submit if IME is composing (Japanese/Chinese/Korean input)
+        if (e.key === "Enter" && !e.shiftKey && !isComposing) {
+          e.preventDefault();
+          handleSubmit();
+        }
+      },
+      [handleSubmit, isComposing],
+    );
+
+    const handleCompositionStart = useCallback(() => {
+      setIsComposing(true);
+    }, []);
+
+    const handleCompositionEnd = useCallback(() => {
+      setIsComposing(false);
+    }, []);
 
     const handleNewThread = useCallback(() => {
       // Cancel any ongoing thread when creating new thread
@@ -243,12 +276,17 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
           </div>
         </div>
         <form onSubmit={handleSubmit} className={styles.inputForm}>
-          <Input
+          <Textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
+            onKeyDown={handleKeyDown}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
+            placeholder="Type your message... (Shift+Enter for new line)"
             disabled={isLoading}
             className={styles.input}
+            rows={1}
           />
           {isLoading ? (
             <Button
