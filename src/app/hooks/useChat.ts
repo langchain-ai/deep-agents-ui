@@ -1,11 +1,14 @@
 import { useCallback, useMemo } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
-import { type Message } from "@langchain/langgraph-sdk";
-import { getDeployment } from "@/lib/environment/deployments";
+import {
+  type Message,
+  type Assistant,
+  type Checkpoint,
+} from "@langchain/langgraph-sdk";
 import { v4 as uuidv4 } from "uuid";
 import type { TodoItem } from "../types/types";
 import { createClient } from "@/lib/client";
-import { useAuthContext } from "@/providers/Auth";
+import { useEnvConfig } from "@/providers/EnvConfig";
 
 type StateType = {
   messages: Message[];
@@ -20,21 +23,16 @@ export function useChat(
   ) => void,
   onTodosUpdate: (todos: TodoItem[]) => void,
   onFilesUpdate: (files: Record<string, string>) => void,
+  activeAssistant: Assistant | null,
 ) {
-  const deployment = useMemo(() => getDeployment(), []);
-  const { session } = useAuthContext();
-  const accessToken = session?.accessToken;
-
-  const agentId = useMemo(() => {
-    if (!deployment?.agentId) {
-      throw new Error(`No agent ID configured in environment`);
-    }
-    return deployment.agentId;
-  }, [deployment]);
+  const { config, configVersion } = useEnvConfig();
+  const deploymentUrl = config?.DEPLOYMENT_URL || "";
+  const langsmithApiKey = config?.LANGSMITH_API_KEY || "filler-token";
+  const assistantId = config?.ASSISTANT_ID || "";
 
   const handleUpdateEvent = useCallback(
     (data: { [node: string]: Partial<StateType> }) => {
-      Object.entries(data).forEach(([_, nodeData]) => {
+      Object.values(data).forEach((nodeData) => {
         if (nodeData?.todos) {
           onTodosUpdate(nodeData.todos);
         }
@@ -46,9 +44,16 @@ export function useChat(
     [onTodosUpdate, onFilesUpdate],
   );
 
+  // Create client with configVersion as dependency to force recreation when config changes
+  const client = useMemo(
+    () => createClient(deploymentUrl, langsmithApiKey),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [deploymentUrl, langsmithApiKey, configVersion],
+  );
+
   const stream = useStream<StateType>({
-    assistantId: agentId,
-    client: createClient(accessToken || ""),
+    assistantId: activeAssistant?.assistant_id || assistantId,
+    client: client,
     reconnectOnMount: true,
     threadId: threadId ?? null,
     onUpdateEvent: handleUpdateEvent,
@@ -74,12 +79,59 @@ export function useChat(
             return { ...prev, messages: newMessages };
           },
           config: {
+            ...(activeAssistant?.config || {}),
             recursion_limit: 100,
           },
         },
       );
     },
-    [stream],
+    [stream, activeAssistant?.config],
+  );
+
+  const runSingleStep = useCallback(
+    (
+      messages: Message[],
+      checkpoint?: Checkpoint,
+      isRerunningSubagent?: boolean,
+    ) => {
+      if (checkpoint) {
+        stream.submit(undefined, {
+          config: {
+            ...(activeAssistant?.config || {}),
+          },
+          checkpoint: checkpoint,
+          ...(isRerunningSubagent
+            ? { interruptAfter: ["tools"] }
+            : { interruptBefore: ["tools"] }),
+        });
+      } else {
+        stream.submit(
+          { messages: messages },
+          {
+            config: {
+              ...(activeAssistant?.config || {}),
+            },
+            interruptBefore: ["tools"],
+          },
+        );
+      }
+    },
+    [stream, activeAssistant?.config],
+  );
+
+  const continueStream = useCallback(
+    (hasTaskToolCall?: boolean) => {
+      stream.submit(undefined, {
+        config: {
+          ...(activeAssistant?.config || {}),
+          recursion_limit: 100,
+        },
+        ...(hasTaskToolCall
+          ? { interruptAfter: ["tools"] }
+          : { interruptBefore: ["tools"] }),
+      });
+    },
+    [stream, activeAssistant?.config],
   );
 
   const stopStream = useCallback(() => {
@@ -89,7 +141,11 @@ export function useChat(
   return {
     messages: stream.messages,
     isLoading: stream.isLoading,
+    interrupt: stream.interrupt,
+    getMessagesMetadata: stream.getMessagesMetadata,
     sendMessage,
+    runSingleStep,
+    continueStream,
     stopStream,
   };
 }

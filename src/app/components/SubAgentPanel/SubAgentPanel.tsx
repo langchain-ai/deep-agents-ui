@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MarkdownContent } from "../MarkdownContent/MarkdownContent";
 import type { SubAgent } from "../../types/types";
-import styles from "./SubAgentPanel.module.scss";
 
 interface SubAgentPanelProps {
   subAgent: SubAgent;
@@ -15,15 +14,31 @@ interface SubAgentPanelProps {
 
 const SubAgentPanelComponent = ({ subAgent, onClose }: SubAgentPanelProps) => {
   const statusIcon = useMemo(() => {
+    const iconStyle = { width: "14px", height: "14px" };
     switch (subAgent.status) {
       case "completed":
-        return <CheckCircle className={styles.statusCompleted} />;
+        return (
+          <CheckCircle
+            style={{ ...iconStyle, color: "var(--color-success)" }}
+          />
+        );
       case "error":
-        return <AlertCircle className={styles.statusError} />;
+        return (
+          <AlertCircle style={{ ...iconStyle, color: "var(--color-error)" }} />
+        );
       case "pending":
-        return <Loader className={styles.statusActive} />;
+        return (
+          <Loader
+            style={{ ...iconStyle, color: "var(--color-primary)" }}
+            className="animate-spin"
+          />
+        );
       default:
-        return <Clock className={styles.statusPending} />;
+        return (
+          <Clock
+            style={{ ...iconStyle, color: "var(--color-text-tertiary)" }}
+          />
+        );
     }
   }, [subAgent.status]);
 
@@ -41,13 +56,53 @@ const SubAgentPanelComponent = ({ subAgent, onClose }: SubAgentPanelProps) => {
   }, [subAgent.status]);
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
-        <div className={styles.headerInfo}>
-          <Bot className={styles.agentIcon} />
+    <div
+      className="absolute top-0 right-0 z-10 flex h-full flex-col"
+      style={{
+        width: "40vw",
+        backgroundColor: "var(--color-background)",
+        borderLeft: "1px solid var(--color-border)",
+        boxShadow:
+          "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+      }}
+    >
+      <div
+        className="flex items-start justify-between border-b"
+        style={{
+          padding: "1rem",
+          borderBottomColor: "var(--color-border)",
+          backgroundColor: "var(--color-surface)",
+        }}
+      >
+        <div
+          className="flex flex-1"
+          style={{ gap: "0.5rem" }}
+        >
+          <Bot
+            className="shrink-0"
+            style={{
+              width: "32px",
+              height: "32px",
+              color: "var(--color-secondary)",
+            }}
+          />
           <div>
-            <h3 className={styles.title}>{subAgent.subAgentName}</h3>
-            <div className={styles.status}>
+            <h3
+              className="text-lg font-semibold"
+              style={{
+                margin: "0 0 0.25rem 0",
+                color: "var(--color-text-primary)",
+              }}
+            >
+              {subAgent.subAgentName}
+            </h3>
+            <div
+              className="flex items-center text-sm"
+              style={{
+                gap: "0.25rem",
+                color: "var(--color-text-secondary)",
+              }}
+            >
               {statusIcon}
               <span>{statusText}</span>
             </div>
@@ -57,35 +112,85 @@ const SubAgentPanelComponent = ({ subAgent, onClose }: SubAgentPanelProps) => {
           variant="ghost"
           size="sm"
           onClick={onClose}
-          className={styles.closeButton}
+          className="transition-colors duration-200"
+          style={{
+            padding: "0.25rem",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--color-border-light)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+          }}
         >
           <X size={20} />
         </Button>
       </div>
 
-      <ScrollArea className={styles.messages}>
-        <div className={styles.content}>
-          <div className={styles.section}>
-            <h4 className={styles.sectionTitle}>Input</h4>
-            <div className={styles.sectionContent}>
+      <ScrollArea className="flex-1 overflow-y-auto">
+        <div style={{ padding: "1.5rem" }}>
+          <div style={{ marginBottom: "2rem" }}>
+            <h4
+              className="text-xs font-semibold tracking-wider uppercase"
+              style={{
+                color: "var(--color-text-secondary)",
+                letterSpacing: "0.05em",
+                marginBottom: "0.5rem",
+              }}
+            >
+              Input
+            </h4>
+            <div
+              className="rounded-md border"
+              style={{
+                padding: "1rem",
+                backgroundColor: "var(--color-surface)",
+                borderColor: "var(--color-border-light)",
+              }}
+            >
               <MarkdownContent
                 content={
                   typeof subAgent.input === "string"
                     ? subAgent.input
-                    : JSON.stringify(subAgent.input, null, 2)
+                    : subAgent.input.description &&
+                        typeof subAgent.input.description === "string"
+                      ? subAgent.input.description
+                      : subAgent.input.prompt &&
+                          typeof subAgent.input.prompt === "string"
+                        ? subAgent.input.prompt
+                        : JSON.stringify(subAgent.input, null, 2)
                 }
               />
             </div>
           </div>
           {subAgent.output && (
-            <div className={styles.section}>
-              <h4 className={styles.sectionTitle}>Output</h4>
-              <div className={styles.sectionContent}>
+            <div style={{ marginBottom: "0" }}>
+              <h4
+                className="font-semibold tracking-wider uppercase"
+                style={{
+                  color: "var(--color-text-secondary)",
+                  letterSpacing: "0.05em",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                Output
+              </h4>
+              <div
+                className="rounded-md border"
+                style={{
+                  padding: "1rem",
+                  backgroundColor: "var(--color-surface)",
+                  borderColor: "var(--color-border-light)",
+                }}
+              >
                 <MarkdownContent
                   content={
                     typeof subAgent.output === "string"
                       ? subAgent.output
-                      : JSON.stringify(subAgent.output, null, 2)
+                      : subAgent.output.result &&
+                          typeof subAgent.output.result === "string"
+                        ? subAgent.output.result
+                        : JSON.stringify(subAgent.output, null, 2)
                   }
                 />
               </div>

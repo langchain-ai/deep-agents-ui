@@ -6,15 +6,15 @@ import { SubAgentIndicator } from "../SubAgentIndicator/SubAgentIndicator";
 import { ToolCallBox } from "../ToolCallBox/ToolCallBox";
 import { MarkdownContent } from "../MarkdownContent/MarkdownContent";
 import type { SubAgent, ToolCall } from "../../types/types";
-import styles from "./ChatMessage.module.scss";
 import { Message } from "@langchain/langgraph-sdk";
 import { extractStringFromMessageContent } from "../../utils/utils";
+import { cn } from "@/lib/utils";
 
 interface ChatMessageProps {
   message: Message;
   toolCalls: ToolCall[];
   showAvatar: boolean;
-  onSelectSubAgent: (subAgent: SubAgent) => void;
+  onSelectSubAgent: (subAgent: SubAgent | null) => void;
   selectedSubAgent: SubAgent | null;
 }
 
@@ -38,11 +38,11 @@ export const ChatMessage = React.memo<ChatMessageProps>(
           return {
             id: toolCall.id,
             name: toolCall.name,
-            subAgentName: toolCall.args["subagent_type"],
-            input: toolCall.args["description"],
-            output: toolCall.result,
+            subAgentName: String(toolCall.args["subagent_type"] || ""),
+            input: toolCall.args,
+            output: toolCall.result ? { result: toolCall.result } : undefined,
             status: toolCall.status,
-          };
+          } as SubAgent;
         });
     }, [toolCalls]);
 
@@ -51,54 +51,81 @@ export const ChatMessage = React.memo<ChatMessageProps>(
     }, [subAgents]);
 
     useEffect(() => {
-      if (
-        subAgents.some(
-          (subAgent: SubAgent) => subAgent.id === selectedSubAgent?.id,
-        )
-      ) {
+      if (subAgents.some((subAgent) => subAgent.id === selectedSubAgent?.id)) {
         onSelectSubAgent(
-          subAgents.find(
-            (subAgent: SubAgent) => subAgent.id === selectedSubAgent?.id,
-          )!,
+          subAgents.find((subAgent) => subAgent.id === selectedSubAgent?.id)!,
         );
       }
-    }, [selectedSubAgent, onSelectSubAgent, subAgentsString]);
+    }, [selectedSubAgent, onSelectSubAgent, subAgentsString, subAgents]);
 
     return (
       <div
-        className={`${styles.message} ${isUser ? styles.user : styles.assistant}`}
+        className={cn(
+          "flex w-full max-w-full overflow-x-hidden",
+          isUser ? "flex-row-reverse" : "",
+        )}
+        style={{ gap: "0.5rem" }}
       >
         <div
-          className={`${styles.avatar} ${!showAvatar ? styles.avatarHidden : ""}`}
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+            !showAvatar
+              ? "bg-transparent"
+              : isUser
+                ? "bg-[var(--color-user-message)]"
+                : "bg-[var(--color-avatar-bg)]",
+          )}
+          style={{ marginTop: "1rem" }}
         >
           {showAvatar &&
             (isUser ? (
-              <User className={styles.avatarIcon} />
+              <User className="h-4 w-4 text-white" />
             ) : (
-              <Bot className={styles.avatarIcon} />
+              <Bot className="h-4 w-4 text-[var(--color-secondary)]" />
             ))}
         </div>
-        <div className={styles.content}>
+        <div className="max-w-[70%] min-w-0 flex-shrink-0">
           {hasContent && (
-            <div className={styles.bubble}>
+            <div
+              className={cn(
+                "w-fit max-w-full overflow-hidden rounded-lg break-words",
+                isUser
+                  ? "ml-auto bg-[var(--color-user-message)] text-white"
+                  : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)]",
+              )}
+              style={{ padding: "0.5rem", marginTop: "1rem" }}
+            >
               {isUser ? (
-                <p className={styles.text}>{messageContent}</p>
+                <p className="m-0 text-sm leading-relaxed whitespace-pre-wrap">
+                  {messageContent}
+                </p>
               ) : (
                 <MarkdownContent content={messageContent} />
               )}
             </div>
           )}
           {hasToolCalls && (
-            <div className={styles.toolCalls}>
+            <div
+              className="flex w-fit max-w-full flex-col"
+              style={{ marginTop: "1rem" }}
+            >
               {toolCalls.map((toolCall: ToolCall) => {
                 if (toolCall.name === "task") return null;
-                return <ToolCallBox key={toolCall.id} toolCall={toolCall} />;
+                return (
+                  <ToolCallBox
+                    key={toolCall.id}
+                    toolCall={toolCall}
+                  />
+                );
               })}
             </div>
           )}
           {!isUser && subAgents.length > 0 && (
-            <div className={styles.subAgents}>
-              {subAgents.map((subAgent: SubAgent) => (
+            <div
+              className="flex w-fit max-w-full flex-col"
+              style={{ gap: "1rem" }}
+            >
+              {subAgents.map((subAgent) => (
                 <SubAgentIndicator
                   key={subAgent.id}
                   subAgent={subAgent}
