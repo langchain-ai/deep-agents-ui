@@ -65,25 +65,33 @@ export const FileViewDialog = React.memo<FileViewDialogProps>(
       return languageMap[fileExtension] || "text";
     }, [fileExtension]);
 
-    const handleCopy = useCallback(() => {
-      if (file.content) {
-        navigator.clipboard.writeText(file.content);
-      }
-    }, [file.content]);
+  const fileContent = useMemo(() => {
+    // Ensure content is always a string
+    if (!file.content) return "";
+    if (typeof file.content === "string") return file.content;
+    // Handle cases where content might be an object or other type
+    return JSON.stringify(file.content, null, 2);
+  }, [file.content]);
 
-    const handleDownload = useCallback(() => {
-      if (file.content) {
-        const blob = new Blob([file.content], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = file.path;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-    }, [file.content, file.path]);
+  const handleCopy = useCallback(() => {
+    if (fileContent) {
+      navigator.clipboard.writeText(fileContent);
+    }
+  }, [fileContent]);
+
+  const handleDownload = useCallback(() => {
+    if (fileContent) {
+      const blob = new Blob([fileContent], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.path;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  }, [fileContent, file.path]);
 
     return (
       <Dialog open={true} onOpenChange={onClose}>
@@ -117,10 +125,10 @@ export const FileViewDialog = React.memo<FileViewDialogProps>(
           </div>
 
           <ScrollArea className={styles.contentArea}>
-            {file.content ? (
+            {fileContent ? (
               isMarkdown ? (
                 <div className={styles.markdownWrapper}>
-                  <MarkdownContent content={file.content} />
+                  <MarkdownContent content={fileContent} />
                 </div>
               ) : (
                 <SyntaxHighlighter
@@ -133,7 +141,7 @@ export const FileViewDialog = React.memo<FileViewDialogProps>(
                   }}
                   showLineNumbers
                 >
-                  {file.content}
+                  {fileContent}
                 </SyntaxHighlighter>
               )
             ) : (
