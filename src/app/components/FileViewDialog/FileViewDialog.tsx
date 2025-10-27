@@ -11,6 +11,14 @@ import { MarkdownContent } from "../MarkdownContent/MarkdownContent";
 import type { FileItem } from "../../types/types";
 import styles from "./FileViewDialog.module.scss";
 
+// Ensure content is always a string
+const getFileContent = (content: unknown): string => {
+  if (!content) return "";
+  if (typeof content === "string") return content;
+  // Handle cases where content might be an object or other type
+  return JSON.stringify(content, null, 2);
+};
+
 interface FileViewDialogProps {
   file: FileItem;
   onClose: () => void;
@@ -65,33 +73,27 @@ export const FileViewDialog = React.memo<FileViewDialogProps>(
       return languageMap[fileExtension] || "text";
     }, [fileExtension]);
 
-  const fileContent = useMemo(() => {
-    // Ensure content is always a string
-    if (!file.content) return "";
-    if (typeof file.content === "string") return file.content;
-    // Handle cases where content might be an object or other type
-    return JSON.stringify(file.content, null, 2);
-  }, [file.content]);
+    const handleCopy = useCallback(() => {
+      const content = getFileContent(file.content);
+      if (content) {
+        navigator.clipboard.writeText(content);
+      }
+    }, [file.content]);
 
-  const handleCopy = useCallback(() => {
-    if (fileContent) {
-      navigator.clipboard.writeText(fileContent);
-    }
-  }, [fileContent]);
-
-  const handleDownload = useCallback(() => {
-    if (fileContent) {
-      const blob = new Blob([fileContent], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = file.path;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-  }, [fileContent, file.path]);
+    const handleDownload = useCallback(() => {
+      const content = getFileContent(file.content);
+      if (content) {
+        const blob = new Blob([content], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.path;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    }, [file.content, file.path]);
 
     return (
       <Dialog open={true} onOpenChange={onClose}>
@@ -125,10 +127,10 @@ export const FileViewDialog = React.memo<FileViewDialogProps>(
           </div>
 
           <ScrollArea className={styles.contentArea}>
-            {fileContent ? (
+            {file.content ? (
               isMarkdown ? (
                 <div className={styles.markdownWrapper}>
-                  <MarkdownContent content={fileContent} />
+                  <MarkdownContent content={getFileContent(file.content)} />
                 </div>
               ) : (
                 <SyntaxHighlighter
@@ -141,7 +143,7 @@ export const FileViewDialog = React.memo<FileViewDialogProps>(
                   }}
                   showLineNumbers
                 >
-                  {fileContent}
+                  {getFileContent(file.content)}
                 </SyntaxHighlighter>
               )
             ) : (
