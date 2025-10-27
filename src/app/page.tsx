@@ -27,6 +27,16 @@ export default function HomePage() {
     setSidebarCollapsed((prev) => !prev);
   }, []);
 
+  const handleFilesUpdate = useCallback(
+    (newFiles: Record<string, string>) => {
+      setFiles((prevFiles) => ({
+        ...prevFiles,
+        ...newFiles,
+      }));
+    },
+    [],
+  );
+
   // When the threadId changes, grab the thread state from the graph server
   useEffect(() => {
     const fetchThreadState = async () => {
@@ -83,7 +93,7 @@ export default function HomePage() {
           setThreadId={setThreadId}
           onSelectSubAgent={setSelectedSubAgent}
           onTodosUpdate={setTodos}
-          onFilesUpdate={setFiles}
+          onFilesUpdate={handleFilesUpdate}
           onNewThread={handleNewThread}
           isLoadingThreadState={isLoadingThreadState}
         />
