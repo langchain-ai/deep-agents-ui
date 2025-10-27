@@ -8,8 +8,20 @@ import { SubAgentPanel } from "./components/SubAgentPanel/SubAgentPanel";
 import { FileViewDialog } from "./components/FileViewDialog/FileViewDialog";
 import { createClient } from "@/lib/client";
 import { useAuthContext } from "@/providers/Auth";
-import type { SubAgent, FileItem, TodoItem } from "./types/types";
+import type { SubAgent, FileItem, TodoItem, FileData } from "./types/types";
 import styles from "./page.module.scss";
+
+function convertFileDataToString(fileData: FileData): string {
+  return fileData.content.join("\n");
+}
+
+function convertFilesMapToStrings(files: Record<string, FileData>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [path, fileData] of Object.entries(files)) {
+    result[path] = convertFileDataToString(fileData);
+  }
+  return result;
+}
 
 export default function HomePage() {
   const { session } = useAuthContext();
@@ -44,10 +56,11 @@ export default function HomePage() {
         if (state.values) {
           const currentState = state.values as {
             todos?: TodoItem[];
-            files?: Record<string, string>;
+            files?: Record<string, FileData>;
           };
           setTodos(currentState.todos || []);
-          setFiles(currentState.files || {});
+          const filesData = currentState.files || {};
+          setFiles(convertFilesMapToStrings(filesData));
         }
       } catch (error) {
         console.error("Failed to fetch thread state:", error);

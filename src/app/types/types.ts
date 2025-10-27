@@ -15,6 +15,12 @@ export interface SubAgent {
   status: "pending" | "active" | "completed" | "error";
 }
 
+export interface FileData {
+  content: string[];
+  created_at: string;
+  modified_at: string;
+}
+
 export interface FileItem {
   path: string;
   content: string;

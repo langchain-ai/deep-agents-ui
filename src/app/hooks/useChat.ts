@@ -3,15 +3,27 @@ import { useStream } from "@langchain/langgraph-sdk/react";
 import { type Message } from "@langchain/langgraph-sdk";
 import { getDeployment } from "@/lib/environment/deployments";
 import { v4 as uuidv4 } from "uuid";
-import type { TodoItem } from "../types/types";
+import type { TodoItem, FileData } from "../types/types";
 import { createClient } from "@/lib/client";
 import { useAuthContext } from "@/providers/Auth";
 
 type StateType = {
   messages: Message[];
   todos: TodoItem[];
-  files: Record<string, string>;
+  files: Record<string, FileData>;
 };
+
+function convertFileDataToString(fileData: FileData): string {
+  return fileData.content.join("\n");
+}
+
+function convertFilesMapToStrings(files: Record<string, FileData>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [path, fileData] of Object.entries(files)) {
+    result[path] = convertFileDataToString(fileData);
+  }
+  return result;
+}
 
 export function useChat(
   threadId: string | null,
@@ -39,7 +51,7 @@ export function useChat(
           onTodosUpdate(nodeData.todos);
         }
         if (nodeData?.files) {
-          onFilesUpdate(nodeData.files);
+          onFilesUpdate(convertFilesMapToStrings(nodeData.files));
         }
       });
     },
