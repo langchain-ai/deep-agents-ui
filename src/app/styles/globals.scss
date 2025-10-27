@@ -1,4 +1,4 @@
-@import "./variables";
+@use "./variables" as *;
 
 @mixin custom-scrollbar {
   &::-webkit-scrollbar {

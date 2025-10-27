@@ -11,6 +11,14 @@ import { MarkdownContent } from "../MarkdownContent/MarkdownContent";
 import type { FileItem } from "../../types/types";
 import styles from "./FileViewDialog.module.scss";
 
+// Ensure content is always a string
+const getFileContent = (content: unknown): string => {
+  if (!content) return "";
+  if (typeof content === "string") return content;
+  // Handle cases where content might be an object or other type
+  return JSON.stringify(content, null, 2);
+};
+
 interface FileViewDialogProps {
   file: FileItem;
   onClose: () => void;
@@ -66,14 +74,16 @@ export const FileViewDialog = React.memo<FileViewDialogProps>(
     }, [fileExtension]);
 
     const handleCopy = useCallback(() => {
-      if (file.content) {
-        navigator.clipboard.writeText(file.content);
+      const content = getFileContent(file.content);
+      if (content) {
+        navigator.clipboard.writeText(content);
       }
     }, [file.content]);
 
     const handleDownload = useCallback(() => {
-      if (file.content) {
-        const blob = new Blob([file.content], { type: "text/plain" });
+      const content = getFileContent(file.content);
+      if (content) {
+        const blob = new Blob([content], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -120,7 +130,7 @@ export const FileViewDialog = React.memo<FileViewDialogProps>(
             {file.content ? (
               isMarkdown ? (
                 <div className={styles.markdownWrapper}>
-                  <MarkdownContent content={file.content} />
+                  <MarkdownContent content={getFileContent(file.content)} />
                 </div>
               ) : (
                 <SyntaxHighlighter
@@ -133,7 +143,7 @@ export const FileViewDialog = React.memo<FileViewDialogProps>(
                   }}
                   showLineNumbers
                 >
-                  {file.content}
+                  {getFileContent(file.content)}
                 </SyntaxHighlighter>
               )
             ) : (
