@@ -1,189 +1,212 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useQueryState } from "nuqs";
-import { ChatInterface } from "./components/ChatInterface/ChatInterface";
-import { TasksFilesSidebar } from "./components/TasksFilesSidebar/TasksFilesSidebar";
-import { SubAgentPanel } from "./components/SubAgentPanel/SubAgentPanel";
-import { FileViewDialog } from "./components/FileViewDialog/FileViewDialog";
-import { createClient } from "@/lib/client";
-import { useEnvConfig } from "@/providers/EnvConfig";
-import type { SubAgent, FileItem, TodoItem } from "./types/types";
+import { getConfig, saveConfig, StandaloneConfig } from "@/lib/config";
+import { ConfigDialog } from "@/app/components/ConfigDialog";
+import { Button } from "@/components/ui/button";
 import { Assistant } from "@langchain/langgraph-sdk";
-import { useChat } from "./hooks/useChat";
-import { toast } from "sonner";
+import { ClientProvider } from "@/providers/ClientProvider";
+import { Settings, MessagesSquare } from "lucide-react";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { ThreadList } from "@/app/components/ThreadList";
+import { ChatProvider } from "@/providers/ChatProvider";
+import { ChatInterface } from "@/app/components/ChatInterface";
+
 
 export default function HomePage() {
-  const { config } = useEnvConfig();
-  const [threadId, setThreadId] = useQueryState("threadId");
-  const [selectedSubAgent, setSelectedSubAgent] = useState<SubAgent | null>(
-    null,
-  );
-  const [debugMode, setDebugMode] = useState(true);
-  const [activeAssistant, setActiveAssistant] = useState<Assistant | null>(
-    null,
-  );
-  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [files, setFiles] = useState<Record<string, string>>({});
-  const [isLoadingThreadState, setIsLoadingThreadState] = useState(false);
-  const [assistantError, setAssistantError] = useState<string | null>(null);
+  const [config, setConfig] = useState<StandaloneConfig | null>(null);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+  const [assistantId, setAssistantId] = useQueryState("assistantId");
+  const [_threadId, setThreadId] = useQueryState("threadId");
+  const [sidebar, setSidebar] = useQueryState("sidebar");
+  
+  const [mutateThreads, setMutateThreads] = useState<(() => void) | null>(null);
 
-  const deploymentUrl = config?.DEPLOYMENT_URL || "";
-  const langsmithApiKey = config?.LANGSMITH_API_KEY || "filler-token";
-  const assistantId = config?.ASSISTANT_ID || "";
-
-  const client = useMemo(() => {
-    return createClient(deploymentUrl, langsmithApiKey);
-  }, [deploymentUrl, langsmithApiKey]);
-
-  const refreshActiveAssistant = useCallback(async () => {
-    if (!assistantId || !deploymentUrl) {
-      setActiveAssistant(null);
-      setAssistantError(null);
-      return;
-    }
-    setAssistantError(null);
-    try {
-      const assistant = await client.assistants.get(assistantId);
-      setActiveAssistant(assistant);
-      setAssistantError(null);
-      toast.dismiss();
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      setActiveAssistant(null);
-      setAssistantError(errorMessage);
-      toast.dismiss();
-      toast.error("Failed to load assistant", {
-        description: `Could not connect to assistant: ${errorMessage}`,
-        duration: 50000,
-      });
-    }
-  }, [client, assistantId, deploymentUrl]);
-
+  // On mount, check for saved config, otherwise show config dialog
   useEffect(() => {
-    refreshActiveAssistant();
-  }, [refreshActiveAssistant]);
-
-  // When the threadId changes, grab the thread state from the graph server
-  useEffect(() => {
-    const fetchThreadState = async () => {
-      // TODO: Potentially remove the langsmithApiKey check
-      if (!threadId || !langsmithApiKey) {
-        setTodos([]);
-        setFiles({});
-        setIsLoadingThreadState(false);
-        return;
+    const savedConfig = getConfig();
+    if (savedConfig) {
+      setConfig(savedConfig);
+      if (!assistantId) {
+        setAssistantId(savedConfig.assistantId);
       }
-      setIsLoadingThreadState(true);
-      try {
-        const state = await client.threads.getState(threadId);
-        if (state.values) {
-          const currentState = state.values as {
-            todos?: TodoItem[];
-            files?: Record<string, string>;
-          };
-          setTodos(currentState.todos || []);
-          setFiles(currentState.files || {});
-        }
-      } catch (error) {
-        console.error("Failed to fetch thread state:", error);
-        setTodos([]);
-        setFiles({});
-      } finally {
-        setIsLoadingThreadState(false);
-      }
-    };
-    fetchThreadState();
-  }, [threadId, client, langsmithApiKey]);
-
-  const handleNewThread = useCallback(() => {
-    setThreadId(null);
-    setSelectedSubAgent(null);
-    setTodos([]);
-    setFiles({});
-  }, [setThreadId]);
-
-  const handleCreateFile = useCallback((fileName: string, content: string) => {
-    setFiles(prev => ({
-      ...prev,
-      [fileName]: content
-    }));
+    } else {
+      setConfigDialogOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const {
-    messages,
-    isLoading,
-    interrupt,
-    getMessagesMetadata,
-    sendMessage,
-    runSingleStep,
-    continueStream,
-    stopStream,
-  } = useChat(threadId, setThreadId, setTodos, setFiles, activeAssistant, files);
+  // If config changes, update the assistantId
+  useEffect(() => {
+    if (config && !assistantId) {
+      setAssistantId(config.assistantId);
+    }
+  }, [config, assistantId, setAssistantId]);
+
+  const handleSaveConfig = (newConfig: StandaloneConfig) => {
+    saveConfig(newConfig);
+    setConfig(newConfig);
+  };
+
+  const langsmithApiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY || "";
+
+  if (!langsmithApiKey) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">
+            Missing API Key
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Please set NEXT_PUBLIC_LANGSMITH_API_KEY as an environment variable.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!config) {
+    return (
+      <>
+        <ConfigDialog
+          open={configDialogOpen}
+          onOpenChange={setConfigDialogOpen}
+          onSave={handleSaveConfig}
+        />
+        <div className="flex h-screen items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Welcome to Standalone Chat</h1>
+            <p className="mt-2 text-muted-foreground">
+              Configure your deployment to get started
+            </p>
+            <Button
+              onClick={() => setConfigDialogOpen(true)}
+              className="mt-4"
+            >
+              Open Configuration
+            </Button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const assistant: Assistant = {
+    assistant_id: config.assistantId,
+    graph_id: config.assistantId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    config: {},
+    metadata: {},
+    version: 1,
+    name: "Default Assistant",
+    context: {},
+  };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        width: "100vw",
-        backgroundColor: "var(--color-surface)",
-        overflow: "hidden",
-      }}
-    >
-      <TasksFilesSidebar
-        threadId={threadId}
-        messages={messages}
-        todos={todos}
-        files={files}
-        activeAssistant={activeAssistant}
-        onFileClick={setSelectedFile}
-        onAssistantUpdate={refreshActiveAssistant}
-        assistantError={assistantError}
-        onCreateFile={handleCreateFile}
+    <>
+      <ConfigDialog
+        open={configDialogOpen}
+        onOpenChange={setConfigDialogOpen}
+        onSave={handleSaveConfig}
+        initialConfig={config}
       />
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          minWidth: 0,
-          position: "relative",
-        }}
-      >
-        <ChatInterface
-          threadId={threadId}
-          messages={messages}
-          isLoading={isLoading}
-          sendMessage={sendMessage}
-          stopStream={stopStream}
-          getMessagesMetadata={getMessagesMetadata}
-          selectedSubAgent={selectedSubAgent}
-          setThreadId={setThreadId}
-          onSelectSubAgent={setSelectedSubAgent}
-          onNewThread={handleNewThread}
-          isLoadingThreadState={isLoadingThreadState}
-          debugMode={debugMode}
-          setDebugMode={setDebugMode}
-          runSingleStep={runSingleStep}
-          continueStream={continueStream}
-          interrupt={interrupt}
-          assistantError={assistantError}
-        />
-        {selectedSubAgent && (
-          <SubAgentPanel
-            subAgent={selectedSubAgent}
-            onClose={() => setSelectedSubAgent(null)}
-          />
-        )}
-      </div>
-      {selectedFile && (
-        <FileViewDialog
-          file={selectedFile}
-          onClose={() => setSelectedFile(null)}
-        />
-      )}
-    </div>
+      <ClientProvider deploymentUrl={config.deploymentUrl} apiKey={langsmithApiKey}>
+        <div className="flex h-screen flex-col">
+          <header className="flex h-16 items-center justify-between border-b px-6">
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-semibold">Deep Agent UI</h1>
+              {!sidebar && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebar("1")}
+                  className="shadow-icon-button rounded-md border border-gray-300 bg-white p-3 text-gray-700 hover:bg-gray-100"
+                >
+                  <MessagesSquare className="mr-2 h-4 w-4" />
+                  Threads
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium">Assistant:</span>{" "}
+                {config.assistantId}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfigDialogOpen(true)}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Button>
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-hidden">
+            <ResizablePanelGroup
+              direction="horizontal"
+              autoSaveId="standalone-chat"
+            >
+              {sidebar && (
+                <>
+                  <ResizablePanel
+                    id="thread-history"
+                    order={1}
+                    defaultSize={30}
+                    className="relative"
+                  >
+                    <ThreadList
+                      onThreadSelect={async (id) => {
+                        await setThreadId(id);
+                      }}
+                      onMutateReady={(fn) => setMutateThreads(() => fn)}
+                    />
+                  </ResizablePanel>
+                  <ResizableHandle />
+                </>
+              )}
+
+              <ResizablePanel
+                id="chat"
+                className="relative flex flex-col"
+                order={2}
+              >
+                <ChatProvider
+                  activeAssistant={assistant}
+                  onHistoryRevalidate={() => mutateThreads?.()}
+                >
+                  <ChatInterface
+                    assistant={assistant}
+                    debugMode={debugMode}
+                    setDebugMode={setDebugMode}
+                    controls={<></>}
+                    empty={
+                      <div className="flex-grow-3 flex items-center justify-center">
+                        <p className="text-muted-foreground">
+                          Start a conversation...
+                        </p>
+                      </div>
+                    }
+                    skeleton={
+                      <div className="flex items-center justify-center p-8">
+                        <p className="text-muted-foreground">Loading...</p>
+                      </div>
+                    }
+                  />
+                </ChatProvider>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
+        </div>
+      </ClientProvider>
+    </>
   );
 }

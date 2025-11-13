@@ -17,7 +17,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
     return (
       <div
         className={cn(
-          "max-w-full min-w-0 overflow-hidden text-sm leading-relaxed break-words text-inherit [&_h1]:mt-6 [&_h1]:mb-4 [&_h1]:font-semibold [&_h1:first-child]:mt-0 [&_h2]:mt-6 [&_h2]:mb-4 [&_h2]:font-semibold [&_h2:first-child]:mt-0 [&_h3]:mt-6 [&_h3]:mb-4 [&_h3]:font-semibold [&_h3:first-child]:mt-0 [&_h4]:mt-6 [&_h4]:mb-4 [&_h4]:font-semibold [&_h4:first-child]:mt-0 [&_h5]:mt-6 [&_h5]:mb-4 [&_h5]:font-semibold [&_h5:first-child]:mt-0 [&_h6]:mt-6 [&_h6]:mb-4 [&_h6]:font-semibold [&_h6:first-child]:mt-0 [&_p]:mb-4 [&_p:last-child]:mb-0",
+          "prose max-w-full min-w-0 overflow-hidden text-sm leading-relaxed break-words text-inherit [&_h1]:mt-6 [&_h1]:mb-4 [&_h1]:font-semibold [&_h1:first-child]:mt-0 [&_h2]:mt-6 [&_h2]:mb-4 [&_h2]:font-semibold [&_h2:first-child]:mt-0 [&_h3]:mt-6 [&_h3]:mb-4 [&_h3]:font-semibold [&_h3:first-child]:mt-0 [&_h4]:mt-6 [&_h4]:mb-4 [&_h4]:font-semibold [&_h4:first-child]:mt-0 [&_h5]:mt-6 [&_h5]:mb-4 [&_h5]:font-semibold [&_h5:first-child]:mt-0 [&_h6]:mt-6 [&_h6]:mb-4 [&_h6]:font-semibold [&_h6:first-child]:mt-0 [&_p]:mb-4 [&_p:last-child]:mb-0",
           className,
         )}
       >
@@ -61,7 +61,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 </SyntaxHighlighter>
               ) : (
                 <code
-                  className="rounded-sm bg-[var(--color-surface)] px-1 py-0.5 font-mono text-[0.9em]"
+                  className="bg-surface rounded-sm px-1 py-0.5 font-mono text-[0.9em]"
                   {...props}
                 >
                   {children}
@@ -87,7 +87,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[var(--color-primary)] no-underline hover:underline"
+                  className="text-primary no-underline hover:underline"
                 >
                   {children}
                 </a>
@@ -95,7 +95,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
             },
             blockquote({ children }: { children?: React.ReactNode }) {
               return (
-                <blockquote className="my-4 border-l-4 border-[var(--color-border)] pl-4 text-[var(--color-text-secondary)] italic">
+                <blockquote className="border-border text-primary/50 my-4 border-l-4 pl-4 italic">
                   {children}
                 </blockquote>
               );
@@ -117,7 +117,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
             table({ children }: { children?: React.ReactNode }) {
               return (
                 <div className="my-4 overflow-x-auto">
-                  <table className="w-full border-collapse [&_td]:border [&_td]:border-[var(--color-border)] [&_td]:p-2 [&_th]:border [&_th]:border-[var(--color-border)] [&_th]:bg-[var(--color-surface)] [&_th]:p-2 [&_th]:text-left [&_th]:font-semibold">
+                  <table className="[&_td]:border-border [&_th]:border-border [&_th]:bg-surface w-full border-collapse [&_td]:border [&_td]:p-2 [&_th]:border [&_th]:p-2 [&_th]:text-left [&_th]:font-semibold">
                     {children}
                   </table>
                 </div>

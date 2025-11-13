@@ -1,6 +1,6 @@
-@import "tailwindcss";
-
-@plugin "tailwindcss-animate";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   :root {
@@ -95,15 +95,32 @@
     --chat-max-width: 900px;
 
     /* Tailwind/Radix UI component variables */
-    --background: #f9f9f9;
-    --foreground: #111827;
-    --muted: #f3f4f6;
-    --muted-foreground: #6b7280;
-    --primary: #1c3c3c;
-    --primary-foreground: #ffffff;
-    --input: #e5e7eb;
-    --ring: #1c3c3c;
-    --destructive: #ef4444;
+    --radius: 0.5rem;
+    --background: 0 0% 98%;
+    --foreground: 220 13% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 13%;
+    --primary: 180 35% 17%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 13% 91%;
+    --secondary-foreground: 220 13% 13%;
+    --muted: 220 13% 95%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 13% 95%;
+    --accent-foreground: 220 13% 13%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 180 35% 17%;
+    --sidebar: 220 13% 95%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -126,39 +143,34 @@
       --color-text-tertiary: #6b7280;
 
       /* Tailwind/Radix UI component variables for dark mode */
-      --background: #0f0f0f;
-      --foreground: #f3f4f6;
-      --muted: #232323;
-      --muted-foreground: #9ca3af;
-      --primary: #2dd4bf;
-      --primary-foreground: #0f0f0f;
-      --input: #2d2d2d;
-      --ring: #2dd4bf;
-      --destructive: #f87171;
+      --radius: 0.5rem;
+      --background: 0 0% 6%;
+      --foreground: 220 13% 95%;
+      --card: 0 0% 10%;
+      --card-foreground: 220 13% 95%;
+      --popover: 0 0% 10%;
+      --popover-foreground: 220 13% 95%;
+      --primary: 174 72% 56%;
+      --primary-foreground: 0 0% 6%;
+      --secondary: 0 0% 14%;
+      --secondary-foreground: 220 13% 95%;
+      --muted: 0 0% 14%;
+      --muted-foreground: 220 9% 65%;
+      --accent: 0 0% 14%;
+      --accent-foreground: 220 13% 95%;
+      --destructive: 0 63% 71%;
+      --destructive-foreground: 0 0% 6%;
+      --border: 0 0% 18%;
+      --input: 0 0% 18%;
+      --ring: 174 72% 56%;
+      --sidebar: 0 0% 10%;
+      --chart-1: 220 70% 50%;
+      --chart-2: 160 60% 45%;
+      --chart-3: 30 80% 55%;
+      --chart-4: 280 65% 60%;
+      --chart-5: 340 75% 55%;
     }
   }
-}
-
-@theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-  /* Define theme colors for Tailwind */
-  --color-primary: #1c3c3c;
-  --color-user-message: #076699;
-  --color-avatar-bg: #ebe8fe;
-  --color-secondary: #1c3c3c;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-background: #f9f9f9;
-  --color-subagent-hover: #d0c9fe;
-  --color-surface: #f9fafb;
-  --color-border: #e5e7eb;
-  --color-border-light: #f3f4f6;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
 }
 
 * {

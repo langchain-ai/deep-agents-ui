@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { EnvConfigProvider } from "@/providers/EnvConfig";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -26,10 +25,8 @@ export default function RootLayout({
         className={inter.className}
         suppressHydrationWarning
       >
-        <EnvConfigProvider>
-          <NuqsAdapter>{children}</NuqsAdapter>
-          <Toaster />
-        </EnvConfigProvider>
+        <NuqsAdapter>{children}</NuqsAdapter>
+        <Toaster />
       </body>
     </html>
   );

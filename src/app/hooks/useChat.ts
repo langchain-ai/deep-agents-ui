@@ -1,4 +1,6 @@
-import { useCallback, useMemo } from "react";
+"use client";
+
+import { useCallback } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import {
   type Message,
@@ -6,90 +8,66 @@ import {
   type Checkpoint,
 } from "@langchain/langgraph-sdk";
 import { v4 as uuidv4 } from "uuid";
-import type { TodoItem } from "../types/types";
-import { createClient } from "@/lib/client";
-import { useEnvConfig } from "@/providers/EnvConfig";
+import type { UseStreamThread } from "@langchain/langgraph-sdk/react";
+import type { TodoItem } from "@/app/types/types";
+import { useClient } from "@/providers/ClientProvider";
+import { HumanResponse } from "@/app/types/inbox";
+import { useQueryState } from "nuqs";
 
-type StateType = {
+export type StateType = {
   messages: Message[];
   todos: TodoItem[];
   files: Record<string, string>;
+  email?: {
+    id?: string;
+    subject?: string;
+    page_content?: string;
+  };
+  ui?: any;
 };
 
-export function useChat(
-  threadId: string | null,
-  setThreadId: (
-    value: string | ((old: string | null) => string | null) | null,
-  ) => void,
-  onTodosUpdate: (todos: TodoItem[]) => void,
-  onFilesUpdate: (files: Record<string, string>) => void,
-  activeAssistant: Assistant | null,
-  currentFiles: Record<string, string>,
-) {
-  const { config, configVersion } = useEnvConfig();
-  const deploymentUrl = config?.DEPLOYMENT_URL || "";
-  const langsmithApiKey = config?.LANGSMITH_API_KEY || "filler-token";
-  const assistantId = config?.ASSISTANT_ID || "";
-
-  const handleUpdateEvent = useCallback(
-    (data: { [node: string]: Partial<StateType> }) => {
-      Object.values(data).forEach((nodeData) => {
-        if (nodeData?.todos) {
-          onTodosUpdate(nodeData.todos);
-        }
-        if (nodeData?.files) {
-          onFilesUpdate(nodeData.files);
-        }
-      });
-    },
-    [onTodosUpdate, onFilesUpdate],
-  );
-
-  // Create client with configVersion as dependency to force recreation when config changes
-  const client = useMemo(
-    () => createClient(deploymentUrl, langsmithApiKey),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [deploymentUrl, langsmithApiKey, configVersion],
-  );
+export function useChat({
+  activeAssistant,
+  onHistoryRevalidate,
+  thread,
+}: {
+  activeAssistant: Assistant | null;
+  onHistoryRevalidate?: () => void;
+  thread?: UseStreamThread<StateType>;
+}) {
+  const [threadId, setThreadId] = useQueryState("threadId");
+  const client = useClient();
 
   const stream = useStream<StateType>({
-    assistantId: activeAssistant?.assistant_id || assistantId,
-    client: client,
+    assistantId: activeAssistant?.assistant_id || "",
+    client: client ?? undefined,
     reconnectOnMount: true,
     threadId: threadId ?? null,
-    onUpdateEvent: handleUpdateEvent,
     onThreadId: setThreadId,
-    defaultHeaders: {
-      "x-auth-scheme": "langsmith",
-    },
+    defaultHeaders: { "x-auth-scheme": "langsmith" },
+    // Revalidate thread list when stream finishes, errors, or creates new thread
+    onFinish: onHistoryRevalidate,
+    onError: onHistoryRevalidate,
+    onCreated: onHistoryRevalidate,
+    experimental_thread: thread,
   });
 
   const sendMessage = useCallback(
-    (message: string) => {
-      const humanMessage: Message = {
-        id: uuidv4(),
-        type: "human",
-        content: message,
-      };
+    (content: string) => {
+      const newMessage: Message = { id: uuidv4(), type: "human", content };
       stream.submit(
-        { 
-          messages: [humanMessage],
-          files: currentFiles
-        },
+        { messages: [newMessage] },
         {
-          optimisticValues(prev) {
-            const prevMessages = prev.messages ?? [];
-            const newMessages = [...prevMessages, humanMessage];
-            return { ...prev, messages: newMessages };
-          },
-          config: {
-            ...(activeAssistant?.config || {}),
-            recursion_limit: 100,
-          },
+          optimisticValues: (prev) => ({
+            messages: [...(prev.messages ?? []), newMessage],
+          }),
+          config: { ...(activeAssistant?.config ?? {}), recursion_limit: 100 },
         },
       );
+      // Update thread list immediately when sending a message
+      onHistoryRevalidate?.();
     },
-    [stream, activeAssistant?.config, currentFiles],
+    [stream, activeAssistant?.config, onHistoryRevalidate],
   );
 
   const runSingleStep = useCallback(
@@ -104,9 +82,7 @@ export function useChat(
           ...(optimisticMessages
             ? { optimisticValues: { messages: optimisticMessages } }
             : {}),
-          config: {
-            ...(activeAssistant?.config || {}),
-          },
+          config: activeAssistant?.config,
           checkpoint: checkpoint,
           ...(isRerunningSubagent
             ? { interruptAfter: ["tools"] }
@@ -114,20 +90,22 @@ export function useChat(
         });
       } else {
         stream.submit(
-          { 
-            messages: messages,
-            files: currentFiles
-          },
-          {
-            config: {
-              ...(activeAssistant?.config || {}),
-            },
-            interruptBefore: ["tools"],
-          },
+          { messages },
+          { config: activeAssistant?.config, interruptBefore: ["tools"] },
         );
       }
     },
-    [stream, activeAssistant?.config, currentFiles],
+    [stream, activeAssistant?.config],
+  );
+
+  const setFiles = useCallback(
+    async (files: Record<string, string>) => {
+      if (!threadId) return;
+      // TODO: missing a way how to revalidate the internal state
+      // I think we do want to have the ability to externally manage the state
+      await client.threads.updateState(threadId, { values: { files } });
+    },
+    [client, threadId],
   );
 
   const continueStream = useCallback(
@@ -141,22 +119,48 @@ export function useChat(
           ? { interruptAfter: ["tools"] }
           : { interruptBefore: ["tools"] }),
       });
+      // Update thread list when continuing stream
+      onHistoryRevalidate?.();
     },
-    [stream, activeAssistant?.config],
+    [stream, activeAssistant?.config, onHistoryRevalidate],
   );
+
+  const sendHumanResponse = useCallback(
+    (response: HumanResponse[]) => {
+      stream.submit(null, { command: { resume: response } });
+      // Update thread list when resuming from interrupt
+      onHistoryRevalidate?.();
+    },
+    [stream, onHistoryRevalidate],
+  );
+
+  const markCurrentThreadAsResolved = useCallback(() => {
+    stream.submit(null, { command: { goto: "__end__", update: null } });
+    // Update thread list when marking thread as resolved
+    onHistoryRevalidate?.();
+  }, [stream, onHistoryRevalidate]);
 
   const stopStream = useCallback(() => {
     stream.stop();
   }, [stream]);
 
   return {
+    stream,
+    todos: stream.values.todos ?? [],
+    files: stream.values.files ?? {},
+    email: stream.values.email,
+    ui: stream.values.ui,
+    setFiles,
     messages: stream.messages,
     isLoading: stream.isLoading,
+    isThreadLoading: stream.isThreadLoading,
     interrupt: stream.interrupt,
     getMessagesMetadata: stream.getMessagesMetadata,
     sendMessage,
     runSingleStep,
     continueStream,
     stopStream,
+    sendHumanResponse,
+    markCurrentThreadAsResolved,
   };
 }
