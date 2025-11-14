@@ -28,9 +28,15 @@ export const SubAgentIndicator = React.memo<SubAgentIndicatorProps>(
               </span>
             </div>
             {isExpanded ? (
-              <ChevronUp size={14} className="shrink-0 text-[#70707B]" />
+              <ChevronUp
+                size={14}
+                className="shrink-0 text-[#70707B]"
+              />
             ) : (
-              <ChevronDown size={14} className="shrink-0 text-[#70707B]" />
+              <ChevronDown
+                size={14}
+                className="shrink-0 text-[#70707B]"
+              />
             )}
           </div>
         </Button>

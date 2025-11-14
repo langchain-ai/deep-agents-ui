@@ -11,8 +11,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+    >
+      <body
+        className={inter.className}
+        suppressHydrationWarning
+      >
         <NuqsAdapter>{children}</NuqsAdapter>
         <Toaster />
       </body>

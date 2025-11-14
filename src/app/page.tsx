@@ -71,7 +71,10 @@ function HomePageContent() {
             <p className="mt-2 text-muted-foreground">
               Configure your deployment to get started
             </p>
-            <Button onClick={() => setConfigDialogOpen(true)} className="mt-4">
+            <Button
+              onClick={() => setConfigDialogOpen(true)}
+              className="mt-4"
+            >
               Open Configuration
             </Button>
           </div>

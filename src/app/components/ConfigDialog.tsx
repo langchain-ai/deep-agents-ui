@@ -60,7 +60,10 @@ export function ConfigDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Configuration</DialogTitle>
@@ -103,7 +106,10 @@ export function ConfigDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
           <Button onClick={handleSave}>Save</Button>

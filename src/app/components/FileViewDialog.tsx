@@ -134,7 +134,10 @@ export const FileViewDialog = React.memo<{
   }, [fileName]);
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog
+      open={true}
+      onOpenChange={onClose}
+    >
       <DialogContent className="flex h-[80vh] max-h-[80vh] min-w-[60vw] flex-col p-6">
         <DialogTitle className="sr-only">
           {file?.path || "New File"}
@@ -166,7 +169,10 @@ export const FileViewDialog = React.memo<{
                   className="h-8 px-2"
                   disabled={editDisabled}
                 >
-                  <Edit size={16} className="mr-1" />
+                  <Edit
+                    size={16}
+                    className="mr-1"
+                  />
                   Edit
                 </Button>
                 <Button
@@ -175,7 +181,10 @@ export const FileViewDialog = React.memo<{
                   size="sm"
                   className="h-8 px-2"
                 >
-                  <Copy size={16} className="mr-1" />
+                  <Copy
+                    size={16}
+                    className="mr-1"
+                  />
                   Copy
                 </Button>
                 <Button
@@ -184,7 +193,10 @@ export const FileViewDialog = React.memo<{
                   size="sm"
                   className="h-8 px-2"
                 >
-                  <Download size={16} className="mr-1" />
+                  <Download
+                    size={16}
+                    className="mr-1"
+                  />
                   Download
                 </Button>
               </>
@@ -240,8 +252,15 @@ export const FileViewDialog = React.memo<{
         </div>
         {isEditingMode && (
           <div className="mt-4 flex justify-end gap-2 border-t border-border pt-4">
-            <Button onClick={handleCancel} variant="outline" size="sm">
-              <X size={16} className="mr-1" />
+            <Button
+              onClick={handleCancel}
+              variant="outline"
+              size="sm"
+            >
+              <X
+                size={16}
+                className="mr-1"
+              />
               Cancel
             </Button>
             <Button
@@ -255,9 +274,15 @@ export const FileViewDialog = React.memo<{
               }
             >
               {fileUpdate.isMutating ? (
-                <Loader2 size={16} className="mr-1 animate-spin" />
+                <Loader2
+                  size={16}
+                  className="mr-1 animate-spin"
+                />
               ) : (
-                <Save size={16} className="mr-1" />
+                <Save
+                  size={16}
+                  className="mr-1"
+                />
               )}
               Save
             </Button>

@@ -159,7 +159,10 @@ export const ChatMessage = React.memo<ChatMessageProps>(
           {!isUser && subAgents.length > 0 && (
             <div className="flex w-fit max-w-full flex-col gap-4">
               {subAgents.map((subAgent) => (
-                <div key={subAgent.id} className="flex w-full flex-col gap-2">
+                <div
+                  key={subAgent.id}
+                  className="flex w-full flex-col gap-2"
+                >
                   <div className="flex items-end gap-2">
                     <div className="w-[calc(100%-100px)]">
                       <SubAgentIndicator

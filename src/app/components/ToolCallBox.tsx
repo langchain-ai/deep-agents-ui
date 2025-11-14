@@ -57,13 +57,33 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
         case "completed":
           return <CircleCheckBigIcon />;
         case "error":
-          return <AlertCircle size={14} className="text-destructive" />;
+          return (
+            <AlertCircle
+              size={14}
+              className="text-destructive"
+            />
+          );
         case "pending":
-          return <Loader2 size={14} className="animate-spin" />;
+          return (
+            <Loader2
+              size={14}
+              className="animate-spin"
+            />
+          );
         case "interrupted":
-          return <StopCircle size={14} className="text-orange-500" />;
+          return (
+            <StopCircle
+              size={14}
+              className="text-orange-500"
+            />
+          );
         default:
-          return <Terminal size={14} className="text-muted-foreground" />;
+          return (
+            <Terminal
+              size={14}
+              className="text-muted-foreground"
+            />
+          );
       }
     }, [status]);
 

@@ -52,12 +52,25 @@ const getStatusIcon = (status: TodoItem["status"], className?: string) => {
   switch (status) {
     case "completed":
       return (
-        <CheckCircle size={16} className={cn("text-success/80", className)} />
+        <CheckCircle
+          size={16}
+          className={cn("text-success/80", className)}
+        />
       );
     case "in_progress":
-      return <Clock size={16} className={cn("text-warning/80", className)} />;
+      return (
+        <Clock
+          size={16}
+          className={cn("text-warning/80", className)}
+        />
+      );
     default:
-      return <Circle size={16} className={cn("text-tertiary/70", className)} />;
+      return (
+        <Circle
+          size={16}
+          className={cn("text-tertiary/70", className)}
+        />
+      );
   }
 };
 
@@ -613,7 +626,10 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                         onClick={() => setMetaOpen(null)}
                       />
                     </div>
-                    <div ref={tasksContainerRef} className="px-[18px]">
+                    <div
+                      ref={tasksContainerRef}
+                      className="px-[18px]"
+                    >
                       {metaOpen === "tasks" &&
                         Object.entries(groupedTodos)
                           .filter(([_, todos]) => todos.length > 0)
@@ -659,7 +675,10 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                 )}
               </div>
             )}
-            <form onSubmit={handleSubmit} className="flex flex-col">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col"
+            >
               <textarea
                 ref={textareaRef}
                 value={input}

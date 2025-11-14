@@ -86,7 +86,10 @@ export function FilesPopover({
                     "var(--color-file-button)";
                 }}
               >
-                <FileText size={24} className="mx-auto text-muted-foreground" />
+                <FileText
+                  size={24}
+                  className="mx-auto text-muted-foreground"
+                />
                 <span className="mx-auto block w-full truncate break-words text-center text-sm leading-relaxed text-foreground">
                   {filePath}
                 </span>
@@ -141,11 +144,26 @@ export const TasksFilesSidebar = React.memo<{
   const getStatusIcon = useCallback((status: TodoItem["status"]) => {
     switch (status) {
       case "completed":
-        return <CheckCircle size={12} className="text-success/80" />;
+        return (
+          <CheckCircle
+            size={12}
+            className="text-success/80"
+          />
+        );
       case "in_progress":
-        return <Clock size={12} className="text-warning/80" />;
+        return (
+          <Clock
+            size={12}
+            className="text-warning/80"
+          />
+        );
       default:
-        return <Circle size={10} className="text-tertiary/70" />;
+        return (
+          <Circle
+            size={10}
+            className="text-tertiary/70"
+          />
+        );
     }
   }, []);
 

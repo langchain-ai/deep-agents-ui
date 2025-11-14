@@ -289,7 +289,10 @@ fontSize: {
       {/* NEW: Port smith-frontend's ResizablePanel layout */}
       <ResizablePanelGroup direction="horizontal">
         {/* NEW: Port ThreadSidebar + ThreadHistoryAgentList */}
-        <ResizablePanel id="thread-history" collapsible>
+        <ResizablePanel
+          id="thread-history"
+          collapsible
+        >
           <ThreadSidebar>
             <ThreadHistoryAgentList />
           </ThreadSidebar>
@@ -1030,7 +1033,10 @@ export const ChatInterface = () => {
   const { scrollRef, contentRef } = useStickToBottom();
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto">
+    <div
+      ref={scrollRef}
+      className="flex-1 overflow-y-auto"
+    >
       <div ref={contentRef}>{/* Messages */}</div>
     </div>
   );

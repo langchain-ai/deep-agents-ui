@@ -92,7 +92,10 @@ function LoadingState() {
   return (
     <div className="space-y-2 p-4">
       {Array.from({ length: 5 }).map((_, i) => (
-        <Skeleton key={i} className="h-16 w-full" />
+        <Skeleton
+          key={i}
+          className="h-16 w-full"
+        />
       ))}
     </div>
   );
@@ -222,10 +225,16 @@ export function ThreadList({
               <SelectGroup>
                 <SelectLabel>Active</SelectLabel>
                 <SelectItem value="idle">
-                  <StatusFilterItem status="idle" label="Idle" />
+                  <StatusFilterItem
+                    status="idle"
+                    label="Idle"
+                  />
                 </SelectItem>
                 <SelectItem value="busy">
-                  <StatusFilterItem status="busy" label="Busy" />
+                  <StatusFilterItem
+                    status="busy"
+                    label="Busy"
+                  />
                 </SelectItem>
               </SelectGroup>
               <SelectSeparator />
@@ -239,7 +248,10 @@ export function ThreadList({
                   />
                 </SelectItem>
                 <SelectItem value="error">
-                  <StatusFilterItem status="error" label="Error" />
+                  <StatusFilterItem
+                    status="error"
+                    label="Error"
+                  />
                 </SelectItem>
               </SelectGroup>
             </SelectContent>
@@ -276,7 +288,10 @@ export function ThreadList({
               if (groupThreads.length === 0) return null;
 
               return (
-                <div key={group} className="mb-4">
+                <div
+                  key={group}
+                  className="mb-4"
+                >
                   <h4 className="m-0 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {GROUP_LABELS[group]}
                   </h4>
