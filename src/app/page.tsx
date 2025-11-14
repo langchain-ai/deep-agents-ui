@@ -54,20 +54,10 @@ function HomePageContent() {
     setConfig(newConfig);
   };
 
-  const langsmithApiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY || "";
-
-  if (!langsmithApiKey) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Missing API Key</h1>
-          <p className="mt-2 text-muted-foreground">
-            Please set NEXT_PUBLIC_LANGSMITH_API_KEY as an environment variable.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const langsmithApiKey =
+    config?.langsmithApiKey ||
+    process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ||
+    "";
 
   if (!config) {
     return (

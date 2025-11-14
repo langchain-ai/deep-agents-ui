@@ -33,21 +33,29 @@ export function ConfigDialog({
   const [assistantId, setAssistantId] = useState(
     initialConfig?.assistantId || ""
   );
+  const [langsmithApiKey, setLangsmithApiKey] = useState(
+    initialConfig?.langsmithApiKey || ""
+  );
 
   useEffect(() => {
     if (open && initialConfig) {
       setDeploymentUrl(initialConfig.deploymentUrl);
       setAssistantId(initialConfig.assistantId);
+      setLangsmithApiKey(initialConfig.langsmithApiKey || "");
     }
   }, [open, initialConfig]);
 
   const handleSave = () => {
     if (!deploymentUrl || !assistantId) {
-      alert("Please fill in all fields");
+      alert("Please fill in all required fields");
       return;
     }
 
-    onSave({ deploymentUrl, assistantId });
+    onSave({
+      deploymentUrl,
+      assistantId,
+      langsmithApiKey: langsmithApiKey || undefined,
+    });
     onOpenChange(false);
   };
 
@@ -57,8 +65,8 @@ export function ConfigDialog({
         <DialogHeader>
           <DialogTitle>Configuration</DialogTitle>
           <DialogDescription>
-            Configure your LangGraph deployment URL and assistant ID. These
-            settings are saved in your browser&apos;s local storage.
+            Configure your LangGraph deployment settings. These settings are
+            saved in your browser&apos;s local storage.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -78,6 +86,18 @@ export function ConfigDialog({
               placeholder="<assistant-id>"
               value={assistantId}
               onChange={(e) => setAssistantId(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="langsmithApiKey">
+              LangSmith API Key <span className="text-muted-foreground">(Optional)</span>
+            </Label>
+            <Input
+              id="langsmithApiKey"
+              type="password"
+              placeholder="lsv2_pt_..."
+              value={langsmithApiKey}
+              onChange={(e) => setLangsmithApiKey(e.target.value)}
             />
           </div>
         </div>
