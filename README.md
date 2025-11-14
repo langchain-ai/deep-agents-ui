@@ -6,22 +6,7 @@ If the term "Deep Agents" is new to you, check out these videos!
 [What are Deep Agents?](https://www.youtube.com/watch?v=433SmtTc0TA)
 [Implementing Deep Agents](https://www.youtube.com/watch?v=TTMYJAw5tiA&t=701s)
 
-And check out this [video](https://youtu.be/0CE_BhdnZZI) for a walkthrough of this UI.
-
-### Optional: Optimization Setup
-
-You can connect to an optimizer graph by setting a few environment variables. The optimizer is an agent whose job is to receive the existing configuration for an agent along with natural language feedback from a user. The optimizer then iterates on and improves that configuration based on the user feedback, and proposes revisions. If the user approves the revisions, they are written as a new assistant version.
-
-```env
-NEXT_PUBLIC_OPTIMIZATION_DEPLOYMENT_URL="https://deep-agent-optimizer-5189c7b205455d77b3dbaa42c4655916.us.langgraph.app"
-NEXT_PUBLIC_LANGSMITH_API_KEY="lsv2_xxxx"
-```
-
-This will enable the Deep Agent Optimizer in the UI. If these variables aren't set, you can still use the UI! The Optimizer Flow will just be disabled.
-
-Note: We will release an open-source optimizer soon!
-
-### Starting the App
+### Getting Started
 
 Install all dependencies and run your app.
 
@@ -30,17 +15,30 @@ yarn install
 yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to test out your deep agent!
+Open [http://localhost:3000](http://localhost:3000) to configure and test out your deep agent!
 
 ### Connecting to a Deep Agent
 
-When you open the app for the first time, you will be prompted to supply two required fields
+When you open the app for the first time, you will be prompted to configure your deployment settings. All settings are saved in your browser's local storage.
 
-- Agent Deployment URL: The URL for the agent that you are connecting to
-- Assistant ID: The ID of the assistant or agent that you are looking to use and optimize against
-- LangSmith API Key: Only required if you are looking to use or optimize a deployed graph
+**Required Fields:**
+- **Deployment URL**: The URL for the LangGraph deployment you are connecting to
+- **Assistant ID**: The ID of the assistant or agent you want to use
 
-You can edit these at any time by clicking on the Settings cog.
+**Optional Field:**
+- **LangSmith API Key**: Your LangSmith API key (format: `lsv2_pt_...`). This may be required for accessing deployed LangGraph applications. You can also provide this via the `NEXT_PUBLIC_LANGSMITH_API_KEY` environment variable.
+
+You can edit these settings at any time by clicking on the Settings button in the header.
+
+### Optional: Environment Variables
+
+You can optionally set environment variables instead of using the settings dialog:
+
+```env
+NEXT_PUBLIC_LANGSMITH_API_KEY="lsv2_xxxx"
+```
+
+**Note:** Settings configured in the UI take precedence over environment variables.
 
 ### Usage
 
