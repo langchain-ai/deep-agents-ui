@@ -19,6 +19,7 @@
     /* App-specific color variables */
     --color-primary: #1c3c3c;
     --color-user-message: #076699;
+    --color-user-message-bg: #e8f4f8;
     --color-avatar-bg: #e8ebeb;
     --color-secondary: #1c3c3c;
     --color-success: #10b981;
@@ -137,43 +138,44 @@
     :root {
       /* App-specific color variables */
       --color-primary: #1c3c3c;
-      --color-user-message: #043d5c;
+      --color-user-message: #065a8a;
+      --color-user-message-bg: #2d2d2d;
       --color-avatar-bg: #1c3c3c;
       --color-secondary: #bbc4c4;
       --color-success: #34d399;
       --color-warning: #fbbf24;
       --color-error: #f87171;
-      --color-background: #0f0f0f;
-      --color-subagent-hover: #132d2d;
-      --color-surface: #1a1a1a;
-      --color-border: #2d2d2d;
-      --color-border-light: #232323;
+      --color-background: #202020;
+      --color-subagent-hover: #1e3f3f;
+      --color-surface: #2a2a2a;
+      --color-border: #404040;
+      --color-border-light: #353535;
       --color-text-primary: #f3f4f6;
       --color-text-secondary: #9ca3af;
       --color-text-tertiary: #6b7280;
 
       /* Tailwind/Radix UI component variables for dark mode */
       --radius: 0.5rem;
-      --background: 0 0% 6%;
+      --background: 0 0% 13%;
       --foreground: 220 13% 95%;
-      --card: 0 0% 10%;
+      --card: 0 0% 18%;
       --card-foreground: 220 13% 95%;
-      --popover: 0 0% 10%;
+      --popover: 0 0% 18%;
       --popover-foreground: 220 13% 95%;
       --primary: 174 72% 56%;
-      --primary-foreground: 0 0% 6%;
-      --secondary: 0 0% 14%;
+      --primary-foreground: 0 0% 13%;
+      --secondary: 0 0% 25%;
       --secondary-foreground: 220 13% 95%;
-      --muted: 0 0% 14%;
-      --muted-foreground: 220 9% 65%;
-      --accent: 0 0% 14%;
+      --muted: 0 0% 22%;
+      --muted-foreground: 220 9% 70%;
+      --accent: 0 0% 22%;
       --accent-foreground: 220 13% 95%;
       --destructive: 0 63% 71%;
-      --destructive-foreground: 0 0% 6%;
-      --border: 0 0% 18%;
-      --input: 0 0% 18%;
+      --destructive-foreground: 0 0% 13%;
+      --border: 0 0% 28%;
+      --input: 0 0% 28%;
       --ring: 174 72% 56%;
-      --sidebar: 0 0% 10%;
+      --sidebar: 0 0% 18%;
       --chart-1: 220 70% 50%;
       --chart-2: 160 60% 45%;
       --chart-3: 30 80% 55%;

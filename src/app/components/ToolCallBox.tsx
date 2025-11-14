@@ -106,15 +106,21 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
           <div className="flex w-full items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               {statusIcon}
-              <span className="text-[15px] font-medium tracking-[-0.6px] text-[#3F3F46]">
+              <span className="text-[15px] font-medium tracking-[-0.6px] text-foreground">
                 {name}
               </span>
             </div>
             {hasContent &&
               (isExpanded ? (
-                <ChevronUp size={14} className="shrink-0 text-[#70707B]" />
+                <ChevronUp
+                  size={14}
+                  className="shrink-0 text-muted-foreground"
+                />
               ) : (
-                <ChevronDown size={14} className="shrink-0 text-[#70707B]" />
+                <ChevronDown
+                  size={14}
+                  className="shrink-0 text-muted-foreground"
+                />
               ))}
           </div>
         </Button>
@@ -146,20 +152,23 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
                         >
                           <button
                             onClick={() => toggleArgExpanded(key)}
-                            className="flex w-full items-center justify-between bg-muted/20 p-2 text-left text-xs font-medium transition-colors hover:bg-muted/40"
+                            className="flex w-full items-center justify-between bg-muted/30 p-2 text-left text-xs font-medium transition-colors hover:bg-muted/50"
                           >
                             <span className="font-mono">{key}</span>
                             {expandedArgs[key] ? (
-                              <ChevronUp size={12} className="text-[#70707B]" />
+                              <ChevronUp
+                                size={12}
+                                className="text-muted-foreground"
+                              />
                             ) : (
                               <ChevronDown
                                 size={12}
-                                className="text-[#70707B]"
+                                className="text-muted-foreground"
                               />
                             )}
                           </button>
                           {expandedArgs[key] && (
-                            <div className="border-t border-border bg-muted/10 p-2">
+                            <div className="border-t border-border bg-muted/20 p-2">
                               <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground">
                                 {typeof value === "string"
                                   ? value
@@ -177,7 +186,7 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
                     <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Result
                     </h4>
-                    <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all rounded-sm border border-border bg-muted/30 p-2 font-mono text-xs leading-7 text-foreground">
+                    <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all rounded-sm border border-border bg-muted/40 p-2 font-mono text-xs leading-7 text-foreground">
                       {typeof result === "string"
                         ? result
                         : JSON.stringify(result, null, 2)}

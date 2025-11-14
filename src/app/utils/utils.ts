@@ -1,4 +1,11 @@
-import { Message } from "@langchain/langgraph-sdk";
+import { Interrupt, Message } from "@langchain/langgraph-sdk";
+import { HumanInterrupt } from "@/app/types/inbox";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 export function extractStringFromMessageContent(message: Message): string {
   return typeof message.content === "string"
@@ -24,6 +31,37 @@ export function extractStringFromMessageContent(message: Message): string {
     : "";
 }
 
+export function extractSubAgentContent(data: unknown): string {
+  if (typeof data === "string") {
+    return data;
+  }
+
+  if (data && typeof data === "object") {
+    const dataObj = data as Record<string, unknown>;
+
+    // Try to extract description first
+    if (dataObj.description && typeof dataObj.description === "string") {
+      return dataObj.description;
+    }
+
+    // Then try prompt
+    if (dataObj.prompt && typeof dataObj.prompt === "string") {
+      return dataObj.prompt;
+    }
+
+    // For output objects, try result
+    if (dataObj.result && typeof dataObj.result === "string") {
+      return dataObj.result;
+    }
+
+    // Fallback to JSON stringification
+    return JSON.stringify(data, null, 2);
+  }
+
+  // Fallback for any other type
+  return JSON.stringify(data, null, 2);
+}
+
 export function isPreparingToCallTaskTool(messages: Message[]): boolean {
   const lastMessage = messages[messages.length - 1];
   return (
@@ -31,24 +69,6 @@ export function isPreparingToCallTaskTool(messages: Message[]): boolean {
       lastMessage.tool_calls?.some(
         (call: { name?: string }) => call.name === "task"
       )) ||
-    false
-  );
-}
-
-export function justCalledTaskTool(messages: Message[]): boolean {
-  const lastAiMessage = messages.findLast((message) => message.type === "ai");
-  if (!lastAiMessage) return false;
-  const toolMessagesAfterLastAiMessage = messages.slice(
-    messages.indexOf(lastAiMessage) + 1
-  );
-  const taskToolCallsCompleted = toolMessagesAfterLastAiMessage.some(
-    (message) => message.type === "tool" && message.name === "task"
-  );
-  return (
-    (lastAiMessage.tool_calls?.some(
-      (call: { name?: string }) => call.name === "task"
-    ) &&
-      taskToolCallsCompleted) ||
     false
   );
 }
@@ -100,6 +120,7 @@ export function formatMessageForLLM(message: Message): string {
   // Handle tool calls from .tool_calls property (for AI messages)
   const toolCallsText: string[] = [];
   if (
+    message.type === "ai" &&
     message.tool_calls &&
     Array.isArray(message.tool_calls) &&
     message.tool_calls.length > 0
@@ -136,11 +157,12 @@ export function formatConversationForLLM(messages: Message[]): string {
   return formattedMessages.join("\n\n---\n\n");
 }
 
-export function prepareOptimizerMessage(feedback: string): string {
-  return `<feedback>
-${feedback}
-</feedback>
-
-You have access to the current configuration in config.yaml and the conversation history in conversation.txt. Use the above feedback to update the config.yaml file based on the conversation context.
-`;
+export function getInterruptTitle(interrupt: Interrupt): string {
+  try {
+    const interruptValue = (interrupt.value as any)?.[0] as HumanInterrupt;
+    return interruptValue?.action_request.action ?? "Unknown interrupt";
+  } catch (error) {
+    console.error("Error getting interrupt title:", error);
+    return "Unknown interrupt";
+  }
 }

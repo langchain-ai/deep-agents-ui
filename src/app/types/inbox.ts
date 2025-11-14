@@ -1,4 +1,3 @@
-import { BaseMessage } from "@langchain/core/messages";
 import { Thread, ThreadStatus } from "@langchain/langgraph-sdk";
 
 /**
@@ -40,44 +39,6 @@ export type HumanResponse = {
   type: "accept" | "ignore" | "response" | "edit";
   args: null | string | ActionRequest;
 };
-
-/**
- * Extended human response type with additional properties for
- * tracking edit status.
- */
-export type HumanResponseWithEdits = HumanResponse &
-  (
-    | { acceptAllowed?: false; editsMade?: never }
-    | { acceptAllowed?: true; editsMade?: boolean }
-  );
-
-/**
- * Email data structure used in the thread values.
- */
-export type Email = {
-  id: string;
-  thread_id: string;
-  from_email: string;
-  to_email: string;
-  subject: string;
-  page_content: string;
-  send_time: string | undefined;
-  read?: boolean;
-  status?: "in-queue" | "processing" | "hitl" | "done";
-};
-
-/**
- * Main thread values type that contains the data
- * passed through the LangGraph workflow.
- */
-export interface ThreadValues {
-  email: Email;
-  messages: BaseMessage[];
-  triage: {
-    logic: string;
-    response: string;
-  };
-}
 
 /**
  * Extended thread status type that includes our custom statuses.

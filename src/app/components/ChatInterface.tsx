@@ -25,7 +25,7 @@ import { Assistant, Message } from "@langchain/langgraph-sdk";
 import {
   extractStringFromMessageContent,
   isPreparingToCallTaskTool,
-} from "@/lib/utils";
+} from "@/app/utils/utils";
 import { v4 as uuidv4 } from "uuid";
 import { useChatContext } from "@/providers/ChatProvider";
 import { useQueryState } from "nuqs";
@@ -36,7 +36,6 @@ import { FilesPopover } from "@/app/components/TasksFilesSidebar";
 interface ChatInterfaceProps {
   assistant: Assistant | null;
   debugMode: boolean;
-  setDebugMode?: (debugMode: boolean) => void;
   // Optional controlled view props from host app
   view?: "chat" | "workflow";
   onViewChange?: (view: "chat" | "workflow") => void;
@@ -66,7 +65,6 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
   ({
     assistant,
     debugMode,
-    setDebugMode,
     view,
     onViewChange,
     onInput,
@@ -453,12 +451,12 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
         <div className="flex-shrink-0 bg-background">
           <div
             className={cn(
-              "mx-4 mb-6 flex flex-shrink-0 flex-col overflow-hidden rounded-xl border border-secondary bg-background",
+              "mx-4 mb-6 flex flex-shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-background",
               "mx-auto w-[calc(100%-32px)] max-w-[1024px] transition-colors duration-200 ease-in-out"
             )}
           >
             {(hasTasks || hasFiles) && (
-              <div className="flex max-h-72 flex-col overflow-y-auto border-b border-b-secondary bg-sidebar empty:hidden">
+              <div className="flex max-h-72 flex-col overflow-y-auto border-b border-border bg-sidebar empty:hidden">
                 {!metaOpen && (
                   <>
                     {(() => {

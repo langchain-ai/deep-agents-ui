@@ -20,7 +20,7 @@ import { ChatInterface } from "@/app/components/ChatInterface";
 export default function HomePage() {
   const [config, setConfig] = useState<StandaloneConfig | null>(null);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
+  const [debugMode, _] = useState(false);
   const [assistantId, setAssistantId] = useQueryState("assistantId");
   const [_threadId, setThreadId] = useQueryState("threadId");
   const [sidebar, setSidebar] = useQueryState("sidebar");
@@ -117,7 +117,7 @@ export default function HomePage() {
         apiKey={langsmithApiKey}
       >
         <div className="flex h-screen flex-col">
-          <header className="flex h-16 items-center justify-between border-b px-6">
+          <header className="flex h-16 items-center justify-between border-b border-border px-6">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-semibold">Deep Agent UI</h1>
               {!sidebar && (
@@ -125,12 +125,12 @@ export default function HomePage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setSidebar("1")}
-                  className="shadow-icon-button rounded-md border border-gray-300 bg-white p-3 text-gray-700 hover:bg-gray-100"
+                  className="rounded-md border border-border bg-card p-3 text-foreground hover:bg-accent"
                 >
                   <MessagesSquare className="mr-2 h-4 w-4" />
                   Threads
                   {interruptCount > 0 && (
-                    <span className="ml-2 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] text-white">
+                    <span className="ml-2 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] text-destructive-foreground">
                       {interruptCount}
                     </span>
                   )}
@@ -203,7 +203,6 @@ export default function HomePage() {
                   <ChatInterface
                     assistant={assistant}
                     debugMode={debugMode}
-                    setDebugMode={setDebugMode}
                     controls={<></>}
                     skeleton={
                       <div className="flex items-center justify-center p-8">

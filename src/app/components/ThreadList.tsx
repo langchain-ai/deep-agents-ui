@@ -206,7 +206,7 @@ export function ThreadList({
   return (
     <div className="absolute inset-0 flex flex-col">
       {/* Header with title, filter, and close button */}
-      <div className="grid flex-shrink-0 grid-cols-[1fr_auto] items-center gap-3 border-b p-4">
+      <div className="grid flex-shrink-0 grid-cols-[1fr_auto] items-center gap-3 border-b border-border p-4">
         <h2 className="text-lg font-semibold tracking-tight">Threads</h2>
         <div className="flex items-center gap-2">
           <Select

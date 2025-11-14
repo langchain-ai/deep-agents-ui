@@ -8,11 +8,11 @@ import { MarkdownContent } from "@/app/components/MarkdownContent";
 import type { SubAgent, ToolCall } from "@/app/types/types";
 import { Interrupt, Message } from "@langchain/langgraph-sdk";
 import {
-  extractStringFromMessageContent,
   extractSubAgentContent,
-} from "@/lib/utils";
+  extractStringFromMessageContent,
+  getInterruptTitle,
+} from "@/app/utils/utils";
 import { cn } from "@/lib/utils";
-import { getInterruptTitle } from "@/lib/utils";
 
 interface ChatMessageProps {
   message: Message;
@@ -102,9 +102,14 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                 className={cn(
                   "mt-4 overflow-hidden break-words text-sm font-normal leading-[150%]",
                   isUser
-                    ? "rounded-xl rounded-br-none border border-secondary bg-secondary px-3 py-2 text-secondary"
+                    ? "rounded-xl rounded-br-none border border-border px-3 py-2 text-foreground"
                     : "text-primary"
                 )}
+                style={
+                  isUser
+                    ? { backgroundColor: "var(--color-user-message-bg)" }
+                    : undefined
+                }
               >
                 {isUser ? (
                   <p className="m-0 whitespace-pre-wrap break-words text-sm leading-relaxed">
