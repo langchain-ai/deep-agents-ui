@@ -23,7 +23,10 @@ export function useThreads(props: {
   return useSWRInfinite(
     (pageIndex: number, previousPageData: ThreadItem[] | null) => {
       const config = getConfig();
-      const apiKey = process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
+      const apiKey =
+        config?.langsmithApiKey ||
+        process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ||
+        "";
 
       if (!config || !apiKey) {
         return null;
