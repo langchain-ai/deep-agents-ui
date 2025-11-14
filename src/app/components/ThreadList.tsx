@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
-import { Loader2, MessageSquare } from "lucide-react";
+import { Loader2, MessageSquare, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,8 +33,8 @@ const GROUP_LABELS = {
 
 const STATUS_COLORS: Record<ThreadItem["status"], string> = {
   idle: "bg-green-500",
-  busy: "bg-yellow-400",
-  interrupted: "bg-red-500",
+  busy: "bg-blue-500",
+  interrupted: "bg-orange-500",
   error: "bg-red-600",
 };
 
@@ -64,11 +64,14 @@ function StatusFilterItem({
   return (
     <span className="inline-flex items-center gap-2">
       <span
-        className={cn("inline-block size-2 rounded-full", getThreadColor(status))}
+        className={cn(
+          "inline-block size-2 rounded-full",
+          getThreadColor(status)
+        )}
       />
       {label}
       {badge !== undefined && badge > 0 && (
-        <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+        <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
           {badge}
         </span>
       )}
@@ -80,7 +83,7 @@ function ErrorState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
       <p className="text-sm text-red-600">Failed to load threads</p>
-      <p className="text-xs text-muted-foreground mt-1">{message}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{message}</p>
     </div>
   );
 }
@@ -98,7 +101,7 @@ function LoadingState() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
-      <MessageSquare className="h-12 w-12 text-gray-300 mb-2" />
+      <MessageSquare className="mb-2 h-12 w-12 text-gray-300" />
       <p className="text-sm text-muted-foreground">No threads found</p>
     </div>
   );
@@ -107,9 +110,16 @@ function EmptyState() {
 interface ThreadListProps {
   onThreadSelect: (id: string) => void;
   onMutateReady?: (mutate: () => void) => void;
+  onClose?: () => void;
+  onInterruptCountChange?: (count: number) => void;
 }
 
-export function ThreadList({ onThreadSelect, onMutateReady }: ThreadListProps) {
+export function ThreadList({
+  onThreadSelect,
+  onMutateReady,
+  onClose,
+  onInterruptCountChange,
+}: ThreadListProps) {
   const [currentThreadId] = useQueryState("threadId");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
@@ -188,62 +198,77 @@ export function ThreadList({ onThreadSelect, onMutateReady }: ThreadListProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Notify parent of interrupt count changes
+  useEffect(() => {
+    onInterruptCountChange?.(interruptedCount);
+  }, [interruptedCount, onInterruptCountChange]);
+
   return (
     <div className="absolute inset-0 flex flex-col">
-      {/* Filter Dropdown - Always visible */}
-      <div className="flex items-center justify-end px-4 py-3 border-b flex-shrink-0">
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end">
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectSeparator />
-            <SelectGroup>
-              <SelectLabel>Active</SelectLabel>
-              <SelectItem value="idle">
-                <StatusFilterItem status="idle" label="Idle" />
-              </SelectItem>
-              <SelectItem value="busy">
-                <StatusFilterItem status="busy" label="Busy" />
-              </SelectItem>
-            </SelectGroup>
-            <SelectSeparator />
-            <SelectGroup>
-              <SelectLabel>Attention</SelectLabel>
-              <SelectItem value="interrupted">
-                <StatusFilterItem
-                  status="interrupted"
-                  label="Interrupted"
-                  badge={interruptedCount}
-                />
-              </SelectItem>
-              <SelectItem value="error">
-                <StatusFilterItem status="error" label="Error" />
-              </SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+      {/* Header with title, filter, and close button */}
+      <div className="grid flex-shrink-0 grid-cols-[1fr_auto] items-center gap-3 border-b p-4">
+        <h2 className="text-lg font-semibold tracking-tight">Threads</h2>
+        <div className="flex items-center gap-2">
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>Active</SelectLabel>
+                <SelectItem value="idle">
+                  <StatusFilterItem status="idle" label="Idle" />
+                </SelectItem>
+                <SelectItem value="busy">
+                  <StatusFilterItem status="busy" label="Busy" />
+                </SelectItem>
+              </SelectGroup>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>Attention</SelectLabel>
+                <SelectItem value="interrupted">
+                  <StatusFilterItem
+                    status="interrupted"
+                    label="Interrupted"
+                    badge={interruptedCount}
+                  />
+                </SelectItem>
+                <SelectItem value="error">
+                  <StatusFilterItem status="error" label="Error" />
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8"
+              aria-label="Close threads sidebar"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
-      <ScrollArea className="flex-1 h-0">
-        {threads.error && (
-          <ErrorState message={threads.error.message} />
-        )}
+      <ScrollArea className="h-0 flex-1">
+        {threads.error && <ErrorState message={threads.error.message} />}
 
         {!threads.error && !threads.data && threads.isLoading && (
           <LoadingState />
         )}
 
-        {!threads.error && !threads.isLoading && isEmpty && (
-          <EmptyState />
-        )}
+        {!threads.error && !threads.isLoading && isEmpty && <EmptyState />}
 
         {!threads.error && !isEmpty && (
-          <div className="p-4 space-y-6">
+          <div className="box-border w-full max-w-full overflow-hidden p-2">
             {(
               Object.keys(GROUP_LABELS) as Array<keyof typeof GROUP_LABELS>
             ).map((group) => {
@@ -251,41 +276,49 @@ export function ThreadList({ onThreadSelect, onMutateReady }: ThreadListProps) {
               if (groupThreads.length === 0) return null;
 
               return (
-                <div key={group}>
-                  <h3 className="text-xs font-semibold text-gray-500 mb-2 px-2">
+                <div key={group} className="mb-4">
+                  <h4 className="m-0 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {GROUP_LABELS[group]}
-                  </h3>
-                  <div className="space-y-1">
+                  </h4>
+                  <div className="flex flex-col gap-1">
                     {groupThreads.map((thread) => (
                       <button
                         key={thread.id}
+                        type="button"
                         onClick={() => onThreadSelect(thread.id)}
                         className={cn(
-                          "w-full text-left px-3 py-2 rounded-lg transition-colors",
-                          "hover:bg-gray-100",
-                          currentThreadId === thread.id && "bg-gray-200"
+                          "grid w-full cursor-pointer items-center gap-3 rounded-lg border-none px-3 py-3 text-left transition-colors duration-200",
+                          "hover:bg-accent",
+                          currentThreadId === thread.id
+                            ? "bg-secondary hover:bg-secondary"
+                            : "bg-transparent"
                         )}
+                        aria-current={currentThreadId === thread.id}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                        <div className="min-w-0 flex-1">
+                          {/* Title + Timestamp Row */}
+                          <div className="mb-1 flex items-center justify-between">
+                            <h3 className="truncate text-sm font-semibold">
+                              {thread.title}
+                            </h3>
+                            <span className="ml-2 flex-shrink-0 text-xs text-muted-foreground">
+                              {formatTime(thread.updatedAt)}
+                            </span>
+                          </div>
+                          {/* Description + Status Row */}
+                          <div className="flex items-center justify-between">
+                            <p className="flex-1 truncate text-sm text-muted-foreground">
+                              {thread.description}
+                            </p>
+                            <div className="ml-2 flex-shrink-0">
                               <div
                                 className={cn(
-                                  "w-2 h-2 rounded-full flex-shrink-0",
+                                  "h-2 w-2 rounded-full",
                                   getThreadColor(thread.status)
                                 )}
                               />
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {thread.title}
-                              </p>
                             </div>
-                            <p className="text-xs text-gray-500 truncate">
-                              {thread.description}
-                            </p>
                           </div>
-                          <span className="text-xs text-gray-400 flex-shrink-0">
-                            {formatTime(thread.updatedAt)}
-                          </span>
                         </div>
                       </button>
                     ))}

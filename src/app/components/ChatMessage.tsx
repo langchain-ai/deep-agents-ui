@@ -14,7 +14,6 @@ import {
 import { cn } from "@/lib/utils";
 import { getInterruptTitle } from "@/lib/utils";
 
-
 interface ChatMessageProps {
   message: Message;
   toolCalls: ToolCall[];
@@ -73,7 +72,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
     >({});
     const isSubAgentExpanded = useCallback(
       (id: string) => expandedSubAgents[id] ?? true,
-      [expandedSubAgents],
+      [expandedSubAgents]
     );
     const toggleSubAgent = useCallback((id: string) => {
       setExpandedSubAgents((prev) => ({
@@ -88,33 +87,33 @@ export const ChatMessage = React.memo<ChatMessageProps>(
       <div
         className={cn(
           "flex w-full max-w-full overflow-x-hidden",
-          isUser && "flex-row-reverse",
+          isUser && "flex-row-reverse"
         )}
       >
         <div
           className={cn(
-            "max-w-full min-w-0",
-            isUser ? "max-w-[70%]" : "w-full",
+            "min-w-0 max-w-full",
+            isUser ? "max-w-[70%]" : "w-full"
           )}
         >
           {(hasContent || debugMode) && (
             <div className={cn("relative flex items-end gap-0")}>
               <div
                 className={cn(
-                  "mt-4 overflow-hidden text-sm leading-[150%] font-normal break-words text-[#1A1A1E]",
+                  "mt-4 overflow-hidden break-words text-sm font-normal leading-[150%]",
                   isUser
-                    ? "bg-muted rounded-xl rounded-br-none border px-4 py-3"
-                    : null,
+                    ? "rounded-xl rounded-br-none border border-secondary bg-secondary px-3 py-2 text-secondary"
+                    : "text-primary"
                 )}
               >
                 {isUser ? (
-                  <p className="m-0 text-sm leading-relaxed break-all whitespace-pre-wrap">
+                  <p className="m-0 whitespace-pre-wrap break-words text-sm leading-relaxed">
                     {messageContent}
                   </p>
                 ) : hasContent ? (
                   <MarkdownContent content={messageContent} />
                 ) : debugMode ? (
-                  <p className="m-0 text-xs whitespace-nowrap italic">
+                  <p className="m-0 whitespace-nowrap text-xs italic">
                     Empty Message
                   </p>
                 ) : null}
@@ -122,7 +121,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
               {debugMode && isAIMessage && !(isLastMessage && isLoading) && (
                 <button
                   onClick={() => onRestartFromAIMessage(message)}
-                  className="absolute right-1 bottom-1 -scale-x-100 rounded-full bg-black/10 p-1 transition-colors duration-200 hover:bg-black/20"
+                  className="absolute bottom-1 right-1 -scale-x-100 rounded-full bg-black/10 p-1 transition-colors duration-200 hover:bg-black/20"
                 >
                   <RotateCcw className="h-3 w-3 text-gray-600" />
                 </button>
@@ -137,7 +136,9 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                   (u) => u.metadata?.tool_call_id === toolCall.id
                 );
                 const isInterrupted =
-                  idx === arr.length - 1 && toolCall.name === interruptTitle && isLastMessage;
+                  idx === arr.length - 1 &&
+                  toolCall.name === interruptTitle &&
+                  isLastMessage;
                 return (
                   <ToolCallBox
                     key={toolCall.id}
@@ -153,10 +154,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
           {!isUser && subAgents.length > 0 && (
             <div className="flex w-fit max-w-full flex-col gap-4">
               {subAgents.map((subAgent) => (
-                <div
-                  key={subAgent.id}
-                  className="flex w-full flex-col gap-2"
-                >
+                <div key={subAgent.id} className="flex w-full flex-col gap-2">
                   <div className="flex items-end gap-2">
                     <div className="w-[calc(100%-100px)]">
                       <SubAgentIndicator
@@ -169,7 +167,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                       {debugMode && subAgent.status === "completed" && (
                         <button
                           onClick={() => onRestartFromSubTask(subAgent.id)}
-                          className="absolute right-1 bottom-1 -scale-x-100 rounded-full bg-black/10 p-1 transition-colors duration-200 hover:bg-black/20"
+                          className="absolute bottom-1 right-1 -scale-x-100 rounded-full bg-black/10 p-1 transition-colors duration-200 hover:bg-black/20"
                         >
                           <RotateCcw className="h-3 w-3 text-gray-600" />
                         </button>
@@ -179,7 +177,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                   {isSubAgentExpanded(subAgent.id) && (
                     <div className="w-full max-w-full">
                       <div className="bg-surface border-border-light rounded-md border p-4">
-                        <h4 className="text-primary/70 mb-2 text-xs font-semibold tracking-wider uppercase">
+                        <h4 className="text-primary/70 mb-2 text-xs font-semibold uppercase tracking-wider">
                           Input
                         </h4>
                         <div className="mb-4">
@@ -189,7 +187,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                         </div>
                         {subAgent.output && (
                           <>
-                            <h4 className="text-primary/70 mb-2 text-xs font-semibold tracking-wider uppercase">
+                            <h4 className="text-primary/70 mb-2 text-xs font-semibold uppercase tracking-wider">
                               Output
                             </h4>
                             <MarkdownContent
@@ -207,7 +205,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
         </div>
       </div>
     );
-  },
+  }
 );
 
 ChatMessage.displayName = "ChatMessage";

@@ -4,24 +4,24 @@ export function extractStringFromMessageContent(message: Message): string {
   return typeof message.content === "string"
     ? message.content
     : Array.isArray(message.content)
-      ? message.content
-          .filter(
-            (c: unknown) =>
-              (typeof c === "object" &&
-                c !== null &&
-                "type" in c &&
-                (c as { type: string }).type === "text") ||
-              typeof c === "string",
-          )
-          .map((c: unknown) =>
+    ? message.content
+        .filter(
+          (c: unknown) =>
+            (typeof c === "object" &&
+              c !== null &&
+              "type" in c &&
+              (c as { type: string }).type === "text") ||
             typeof c === "string"
-              ? c
-              : typeof c === "object" && c !== null && "text" in c
-                ? (c as { text?: string }).text || ""
-                : "",
-          )
-          .join("")
-      : "";
+        )
+        .map((c: unknown) =>
+          typeof c === "string"
+            ? c
+            : typeof c === "object" && c !== null && "text" in c
+            ? (c as { text?: string }).text || ""
+            : ""
+        )
+        .join("")
+    : "";
 }
 
 export function isPreparingToCallTaskTool(messages: Message[]): boolean {
@@ -29,7 +29,7 @@ export function isPreparingToCallTaskTool(messages: Message[]): boolean {
   return (
     (lastMessage.type === "ai" &&
       lastMessage.tool_calls?.some(
-        (call: { name?: string }) => call.name === "task",
+        (call: { name?: string }) => call.name === "task"
       )) ||
     false
   );
@@ -39,14 +39,14 @@ export function justCalledTaskTool(messages: Message[]): boolean {
   const lastAiMessage = messages.findLast((message) => message.type === "ai");
   if (!lastAiMessage) return false;
   const toolMessagesAfterLastAiMessage = messages.slice(
-    messages.indexOf(lastAiMessage) + 1,
+    messages.indexOf(lastAiMessage) + 1
   );
   const taskToolCallsCompleted = toolMessagesAfterLastAiMessage.some(
-    (message) => message.type === "tool" && message.name === "task",
+    (message) => message.type === "tool" && message.name === "task"
   );
   return (
     (lastAiMessage.tool_calls?.some(
-      (call: { name?: string }) => call.name === "task",
+      (call: { name?: string }) => call.name === "task"
     ) &&
       taskToolCallsCompleted) ||
     false
@@ -66,15 +66,15 @@ export function formatMessageForLLM(message: Message): string {
   }
 
   const timestamp = message.id ? ` (${message.id.slice(0, 8)})` : "";
-  
+
   let contentText = "";
-  
+
   // Extract content text
   if (typeof message.content === "string") {
     contentText = message.content;
   } else if (Array.isArray(message.content)) {
     const textParts: string[] = [];
-    
+
     message.content.forEach((part: any) => {
       if (typeof part === "string") {
         textParts.push(part);
@@ -83,10 +83,10 @@ export function formatMessageForLLM(message: Message): string {
       }
       // Ignore other types like tool_use in content - we handle tool calls separately
     });
-    
+
     contentText = textParts.join("\n\n").trim();
   }
-  
+
   // For tool messages, include additional tool metadata
   if (message.type === "tool") {
     const toolName = (message as any).name || "unknown_tool";
@@ -96,17 +96,21 @@ export function formatMessageForLLM(message: Message): string {
       role += ` (call_id: ${toolCallId.slice(0, 8)})`;
     }
   }
-  
+
   // Handle tool calls from .tool_calls property (for AI messages)
   const toolCallsText: string[] = [];
-  if (message.tool_calls && Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
+  if (
+    message.tool_calls &&
+    Array.isArray(message.tool_calls) &&
+    message.tool_calls.length > 0
+  ) {
     message.tool_calls.forEach((call: any) => {
       const toolName = call.name || "unknown_tool";
       const toolArgs = call.args ? JSON.stringify(call.args, null, 2) : "{}";
       toolCallsText.push(`[Tool Call: ${toolName}]\nArguments: ${toolArgs}`);
     });
   }
-  
+
   // Combine content and tool calls
   const parts: string[] = [];
   if (contentText) {
@@ -115,15 +119,15 @@ export function formatMessageForLLM(message: Message): string {
   if (toolCallsText.length > 0) {
     parts.push(...toolCallsText);
   }
-  
+
   if (parts.length === 0) {
     return `${role}${timestamp}: [Empty message]`;
   }
-  
+
   if (parts.length === 1) {
     return `${role}${timestamp}: ${parts[0]}`;
   }
-  
+
   return `${role}${timestamp}:\n${parts.join("\n\n")}`;
 }
 

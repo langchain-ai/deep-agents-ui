@@ -100,7 +100,7 @@ interface BaseThreadData<T extends Record<string, any> = Record<string, any>> {
  * field acts as the discriminator.
  */
 export interface GenericThreadData<
-  T extends Record<string, any> = Record<string, any>,
+  T extends Record<string, any> = Record<string, any>
 > extends BaseThreadData<T> {
   status: "idle" | "busy" | "error" | "human_response_needed";
   interrupts?: undefined;
@@ -111,7 +111,7 @@ export interface GenericThreadData<
  * Contains additional fields specific to interruptions.
  */
 export interface InterruptedThreadData<
-  T extends Record<string, any> = Record<string, any>,
+  T extends Record<string, any> = Record<string, any>
 > extends BaseThreadData<T> {
   status: "interrupted";
   interrupts?: HumanInterrupt[];

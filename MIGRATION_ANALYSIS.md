@@ -5,11 +5,13 @@
 This document provides a comprehensive analysis of how to port the **complete AgentBuilder chat interface + thread management** from the langchainplus smith-frontend repo to the deep-agents-ui repo.
 
 **Current State:**
+
 - deep-agents-ui has a functional chat interface with LangGraph SDK integration
 - Uses Next.js 15 with React 19 (newer than smith-frontend)
 - Has basic features: chat, file management, task tracking, custom thread history sidebar
 
 **Goal:**
+
 - Port the FULL chat interface from smith-frontend (exact UI/UX match)
 - Port the FULL thread management system (resizable left sidebar with thread list)
 - Replace current thread history sidebar with smith-frontend's approach
@@ -17,6 +19,7 @@ This document provides a comprehensive analysis of how to port the **complete Ag
 - Focus on core functionality: deployment URL + assistant ID → thread connection
 
 **Key Change from Current:**
+
 - **REMOVE**: Current ThreadHistorySidebar component
 - **ADD**: smith-frontend's ResizablePanel layout with ThreadSidebar + ThreadHistoryAgentList
 - **PORT**: Complete ChatInterface with inline tasks/files
@@ -27,6 +30,7 @@ This document provides a comprehensive analysis of how to port the **complete Ag
 ## 1. Package Version Comparison
 
 ### smith-frontend (Reference)
+
 ```json
 {
   "react": "^18.2.0",
@@ -47,6 +51,7 @@ This document provides a comprehensive analysis of how to port the **complete Ag
 ```
 
 ### deep-agents-ui (Current)
+
 ```json
 {
   "react": "19.1.0",
@@ -65,6 +70,7 @@ This document provides a comprehensive analysis of how to port the **complete Ag
 ### Key Differences & Actions
 
 #### ✅ Keep (Newer/Better)
+
 - **React 19.1.0** - Keep, newer than smith-frontend
 - **Tailwind 4.0.13** - Keep, newer and improved
 - **lucide-react ^0.539.0** - Keep, newer version
@@ -72,11 +78,13 @@ This document provides a comprehensive analysis of how to port the **complete Ag
 - **nuqs ^2.4.3** - Keep, compatible
 
 #### ⚠️ Upgrade Required
+
 - **@langchain/langgraph-sdk**: Upgrade from `^0.0.105` → `^0.1.10`
   - Critical for compatibility with smith-frontend patterns
   - Includes improved `useStream` hook
 
 #### 📦 Add Missing Dependencies
+
 - **use-stick-to-bottom**: `^1.1.1` - Essential for proper chat scrolling
 - **react-resizable-panels**: `^0.0.55` - **CRITICAL** for resizable sidebar layout
 - **swr**: `^2.1.5` - Better data fetching for threads (recommended)
@@ -88,6 +96,7 @@ This document provides a comprehensive analysis of how to port the **complete Ag
 ## 2. Architecture Comparison
 
 ### smith-frontend
+
 - **Build System**: Vite
 - **Routing**: React Router v6
 - **State Management**: React Context + SWR + Zustand
@@ -95,6 +104,7 @@ This document provides a comprehensive analysis of how to port the **complete Ag
 - **Components**: Custom design-system components
 
 ### deep-agents-ui
+
 - **Build System**: Next.js 15 (App Router)
 - **Routing**: Next.js App Router
 - **State Management**: React Context (EnvConfigProvider)
@@ -102,7 +112,9 @@ This document provides a comprehensive analysis of how to port the **complete Ag
 - **Components**: shadcn/ui components
 
 ### Migration Strategy
+
 Since deep-agents-ui uses Next.js (vs Vite), we'll:
+
 1. Keep Next.js architecture
 2. Port component patterns and logic
 3. Adapt styling to Tailwind 4.0 syntax
@@ -115,6 +127,7 @@ Since deep-agents-ui uses Next.js (vs Vite), we'll:
 ### smith-frontend Design Tokens
 
 #### Color System
+
 ```js
 // CSS Variables for theming
 backgroundColor: {
@@ -142,6 +155,7 @@ borderColor: {
 ```
 
 #### Typography
+
 ```js
 fontSize: {
   xxs: '0.75rem',  // 12px
@@ -164,19 +178,22 @@ fontSize: {
 ```
 
 #### Utilities
+
 - `.no-scrollbar` - Hide scrollbars
 - `.break-anywhere` - Smart word breaking
 - `.no-number-spinner` - Hide input spinners
 - `.text-security` - Password-style masking
 
 ### deep-agents-ui Current
+
 - Uses CSS variables but different naming
 - Has custom spacing, colors, but less comprehensive
 - Missing display utilities and caps-label utilities
 
 ### Action Items
+
 1. **Merge color systems** - Add smith-frontend color variables
-2. **Add missing utilities** - display-*, caps-label-*, etc.
+2. **Add missing utilities** - display-_, caps-label-_, etc.
 3. **Update scrollbar styles** - Global scrollbar theming
 4. **Keep Tailwind 4.0** - Adapt smith-frontend patterns to v4 syntax
 
@@ -185,6 +202,7 @@ fontSize: {
 ## 4. Complete Layout Architecture Comparison
 
 ### smith-frontend FULL Layout Pattern (TARGET)
+
 ```tsx
 <AgentBuilderChatPage>
   {/* Header with breadcrumbs */}
@@ -192,7 +210,6 @@ fontSize: {
 
   {/* Main layout with resizable panels */}
   <ResizablePanelGroup direction="horizontal">
-
     {/* LEFT SIDEBAR - Thread List */}
     <ResizablePanel
       id="thread-history"
@@ -238,25 +255,24 @@ fontSize: {
         </ChatProvider>
       </AgentChat>
     </ResizablePanel>
-
   </ResizablePanelGroup>
 </AgentBuilderChatPage>
 ```
 
 ### deep-agents-ui Current Pattern (TO REPLACE)
+
 ```tsx
 <EnvConfigProvider>
   <NuqsAdapter>
-    <Page> {/* All-in-one component */}
+    <Page>
+      {" "}
+      {/* All-in-one component */}
       {/* LEFT - Custom thread sidebar */}
       <ThreadHistorySidebar />
-
       {/* MIDDLE - Chat */}
       <ChatInterface />
-
       {/* RIGHT - Tasks/Files sidebar */}
       <TasksFilesSidebar />
-
       {/* Floating panel */}
       <SubAgentPanel />
     </Page>
@@ -265,13 +281,13 @@ fontSize: {
 ```
 
 ### Migration Target Layout
+
 ```tsx
 <EnvConfigProvider>
   <NuqsAdapter>
     <Page>
       {/* NEW: Port smith-frontend's ResizablePanel layout */}
       <ResizablePanelGroup direction="horizontal">
-
         {/* NEW: Port ThreadSidebar + ThreadHistoryAgentList */}
         <ResizablePanel id="thread-history" collapsible>
           <ThreadSidebar>
@@ -289,7 +305,6 @@ fontSize: {
             </ChatInterface>
           </ChatProvider>
         </ResizablePanel>
-
       </ResizablePanelGroup>
     </Page>
   </NuqsAdapter>
@@ -298,23 +313,24 @@ fontSize: {
 
 ### Key Differences & Migration Actions
 
-| Feature | smith-frontend | deep-agents-ui | Action |
-|---------|---------------|----------------|--------|
-| **Layout** | ResizablePanel (horizontal) | Custom grid | 🔄 Port ResizablePanel |
-| **Thread List** | Left sidebar (collapsible) | Custom ThreadHistorySidebar | 🔄 Replace with smith-frontend version |
-| **Thread Grouping** | Time-based + status groups | Simple list | 🔄 Port grouping logic |
-| **Thread Filtering** | Status dropdown filter | None | ➕ Add filtering |
-| **Scrolling** | `useStickToBottom` hook | Manual scroll | 🔄 Port useStickToBottom |
-| **Context Pattern** | ChatProvider with useChat | Direct hook usage | 🔄 Port ChatProvider |
-| **Tasks/Files** | Inline in chat input area | Separate right sidebar | 🔄 Move to inline |
-| **Input Position** | Sticky (top when empty, bottom when filled) | Fixed bottom | 🔄 Port sticky logic |
-| **Message Processing** | Map-based with tool call tracking | Similar approach | ✅ Keep pattern |
-| **Test Mode** | Checkpoint-based step execution | Debug mode | 🔄 Port checkpoints |
-| **Draft Thread** | DraftContext tracking unsent text | None | ➕ Add draft support |
-| **Thread Status** | Visual indicators (colored dots) | Basic | 🔄 Port status indicators |
-| **Auto-refresh** | 5-second polling | On-demand | ➕ Add auto-refresh |
+| Feature                | smith-frontend                              | deep-agents-ui              | Action                                 |
+| ---------------------- | ------------------------------------------- | --------------------------- | -------------------------------------- |
+| **Layout**             | ResizablePanel (horizontal)                 | Custom grid                 | 🔄 Port ResizablePanel                 |
+| **Thread List**        | Left sidebar (collapsible)                  | Custom ThreadHistorySidebar | 🔄 Replace with smith-frontend version |
+| **Thread Grouping**    | Time-based + status groups                  | Simple list                 | 🔄 Port grouping logic                 |
+| **Thread Filtering**   | Status dropdown filter                      | None                        | ➕ Add filtering                       |
+| **Scrolling**          | `useStickToBottom` hook                     | Manual scroll               | 🔄 Port useStickToBottom               |
+| **Context Pattern**    | ChatProvider with useChat                   | Direct hook usage           | 🔄 Port ChatProvider                   |
+| **Tasks/Files**        | Inline in chat input area                   | Separate right sidebar      | 🔄 Move to inline                      |
+| **Input Position**     | Sticky (top when empty, bottom when filled) | Fixed bottom                | 🔄 Port sticky logic                   |
+| **Message Processing** | Map-based with tool call tracking           | Similar approach            | ✅ Keep pattern                        |
+| **Test Mode**          | Checkpoint-based step execution             | Debug mode                  | 🔄 Port checkpoints                    |
+| **Draft Thread**       | DraftContext tracking unsent text           | None                        | ➕ Add draft support                   |
+| **Thread Status**      | Visual indicators (colored dots)            | Basic                       | 🔄 Port status indicators              |
+| **Auto-refresh**       | 5-second polling                            | On-demand                   | ➕ Add auto-refresh                    |
 
 ### Key Decisions
+
 1. ✅ **Port complete smith-frontend layout** - ResizablePanel with thread sidebar
 2. ✅ **Remove current ThreadHistorySidebar** - Replace with smith-frontend version
 3. ✅ **Remove TasksFilesSidebar** - Move to inline in chat input
@@ -326,7 +342,9 @@ fontSize: {
 ## 5. Thread Management System (COMPLETE PORT)
 
 ### Overview
+
 smith-frontend uses a sophisticated thread management system with:
+
 - **Left sidebar** with collapsible/resizable panel
 - **Thread grouping** by time (Today, Yesterday, This Week, Older) + status (Requiring Attention)
 - **Thread filtering** by status (All, Idle, Busy, Interrupted, Error)
@@ -338,17 +356,20 @@ smith-frontend uses a sophisticated thread management system with:
 ### Components to Port
 
 #### 1. ThreadSidebar
+
 **File**: `AgentBuilderChatPage.tsx` (lines 100-218)
 
 **Purpose**: Container for thread list with header and controls
 
 **Features**:
+
 - Header with "Threads" label
 - Status filter dropdown (All, Idle, Busy, Interrupted, Error)
 - Close button to collapse sidebar
 - Contains ThreadHistoryAgentList
 
 **Props**:
+
 ```tsx
 interface ThreadSidebarProps {
   agentId: string;
@@ -361,11 +382,13 @@ interface ThreadSidebarProps {
 ```
 
 #### 2. ThreadHistoryAgentList
+
 **File**: `features/agent-chat/components/ThreadHistoryAgentList.tsx`
 
 **Purpose**: Main thread list with grouping and pagination
 
 **Features**:
+
 - Groups threads by:
   - **Requiring Attention** (interrupted/error threads, max 10)
   - **Today** (updated today)
@@ -377,6 +400,7 @@ interface ThreadSidebarProps {
 - SWR data fetching with 5-second refresh
 
 **Data Fetching**:
+
 ```tsx
 const { data, isLoading, size, setSize } = useThreads({
   assistantId: agentId,
@@ -387,11 +411,13 @@ const { data, isLoading, size, setSize } = useThreads({
 ```
 
 #### 3. ThreadRow
+
 **File**: `ThreadHistoryAgentList.tsx` (lines 241+)
 
 **Purpose**: Individual thread list item
 
 **Display**:
+
 - Status indicator (colored dot)
 - Thread title (first human message, truncated to 80 chars)
 - Thread description (last message, truncated)
@@ -399,17 +425,20 @@ const { data, isLoading, size, setSize } = useThreads({
 - Active state highlighting
 
 **Status Colors**:
+
 - 🟢 Green: Idle
 - 🟡 Yellow: Busy
 - 🔴 Red: Interrupted/Error
 - ⚪ Gray: Draft
 
 #### 4. ResizablePanel Layout
+
 **Library**: `react-resizable-panels`
 
 **Usage**:
+
 ```tsx
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 <PanelGroup direction="horizontal">
   <Panel
@@ -427,7 +456,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
   <Panel id="chat">
     <ChatInterface />
   </Panel>
-</PanelGroup>
+</PanelGroup>;
 ```
 
 ### Thread Data Flow
@@ -464,18 +493,18 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 // Pseudo-code from smith-frontend
 const groupThreads = (threads: Thread[]) => {
   const groups = {
-    attention: [],  // interrupted or error
+    attention: [], // interrupted or error
     today: [],
     yesterday: [],
     thisWeek: [],
-    older: []
+    older: [],
   };
 
-  threads.forEach(thread => {
-    if (thread.status === 'interrupted' || thread.status === 'error') {
+  threads.forEach((thread) => {
+    if (thread.status === "interrupted" || thread.status === "error") {
       groups.attention.push(thread);
     } else {
-      const diff = dayjs().diff(dayjs(thread.updatedAt), 'day');
+      const diff = dayjs().diff(dayjs(thread.updatedAt), "day");
       if (diff === 0) groups.today.push(thread);
       else if (diff === 1) groups.yesterday.push(thread);
       else if (diff <= 7) groups.thisWeek.push(thread);
@@ -492,6 +521,7 @@ const groupThreads = (threads: Thread[]) => {
 **Purpose**: Show unsent message as a draft thread in the list
 
 **Implementation**:
+
 ```tsx
 // DraftContext tracks unsent message text
 const DraftContext = createContext<[string | null, (draft: string | null) => void]>([null, () => {}]);
@@ -543,6 +573,7 @@ if (draft && !currentThreadId) {
 ### smith-frontend Button Component
 
 **API:**
+
 ```tsx
 <Button
   size="sm" | "md"
@@ -557,6 +588,7 @@ if (draft && !currentThreadId) {
 ```
 
 **Styling Pattern:**
+
 - Uses `buttonStyleMap` for color/variant combinations
 - Shadow: `0px 1px 2px rgba(16,24,40,0.05)`
 - Rounded corners: `rounded-sm` (4px) or `rounded-md`
@@ -567,6 +599,7 @@ if (draft && !currentThreadId) {
 ### deep-agents-ui Button (shadcn/ui)
 
 **API:**
+
 ```tsx
 <Button
   size="default" | "sm" | "lg" | "icon"
@@ -575,7 +608,9 @@ if (draft && !currentThreadId) {
 ```
 
 ### Migration Path
+
 1. **Option A**: Replace shadcn Button with smith-frontend Button
+
    - Pros: Exact match to reference design
    - Cons: More work, need to port Badge, Text components too
 
@@ -590,6 +625,7 @@ if (draft && !currentThreadId) {
 ## 6. Hook Patterns: useChat
 
 ### smith-frontend useChat
+
 ```tsx
 const {
   todos,
@@ -620,6 +656,7 @@ const {
 ```
 
 **Key Features:**
+
 - Uses `useStream` from `@langchain/langgraph-sdk/react`
 - Includes HITL support (`interrupt`, `sendHumanResponse`)
 - Checkpoint-based test mode
@@ -628,6 +665,7 @@ const {
 - State history fetching for test mode
 
 ### deep-agents-ui useChat
+
 ```tsx
 const {
   messages,
@@ -647,12 +685,14 @@ const {
 ```
 
 **Differences:**
+
 - Similar structure but simplified
 - Missing HITL response handling
 - Missing metadata access
 - No checkpoint recovery
 
 ### Migration Actions
+
 1. **Upgrade SDK**: Update to `@langchain/langgraph-sdk ^0.1.10`
 2. **Add HITL**: Implement `sendHumanResponse` and interrupt UI
 3. **Add metadata**: Expose `getMessagesMetadata` for test mode
@@ -662,36 +702,38 @@ const {
 
 ## 8. Feature Parity Matrix
 
-| Feature | smith-frontend | deep-agents-ui | Priority | Action |
-|---------|----------------|----------------|----------|--------|
-| **Layout System** | ✅ ResizablePanel | ❌ Custom grid | **CRITICAL** | 🔄 **Port complete layout** |
-| **Thread Sidebar** | ✅ Collapsible left sidebar | ✅ Custom sidebar | **CRITICAL** | 🔄 **Replace completely** |
-| **Thread Grouping** | ✅ Time + status based | ❌ Simple list | **CRITICAL** | 🔄 **Port grouping logic** |
-| **Thread Filtering** | ✅ Status dropdown | ❌ None | **HIGH** | ➕ **Add filtering** |
-| **Thread Auto-refresh** | ✅ 5-second polling | ❌ Manual | **HIGH** | ➕ **Add auto-refresh** |
-| **Draft Thread** | ✅ DraftContext | ❌ None | **HIGH** | ➕ **Add draft system** |
-| **Thread Status** | ✅ Colored indicators | ⚠️ Basic | **HIGH** | 🔄 **Port indicators** |
-| **useThreads Hook** | ✅ SWR-based | ✅ Custom | **HIGH** | 🔄 **Port SWR version** |
-| **ChatInterface** | ✅ Inline tasks/files | ✅ Separate sidebar | **CRITICAL** | 🔄 **Port complete UI** |
-| **Sticky Scrolling** | ✅ useStickToBottom | ❌ Manual | **HIGH** | ➕ **Add hook** |
-| **ChatProvider** | ✅ Context pattern | ❌ Direct hooks | **HIGH** | 🔄 **Port provider** |
-| **LangGraph SDK** | ✅ (v0.1.10) | ✅ (v0.0.105) | **HIGH** | ⬆️ **Upgrade SDK** |
-| **Design System** | ✅ Custom components | ✅ shadcn | **HIGH** | 🔄 **Port components** |
-| **HITL Support** | ✅ Full | ⚠️ Basic | **MEDIUM** | ➕ Add full support |
-| **Test Mode** | ✅ Checkpoints | ✅ Debug mode | **MEDIUM** | ➕ Add checkpoints |
-| **Error Handling** | ✅ Expandable | ✅ Basic | **MEDIUM** | 🔄 Port expandable |
-| **Empty States** | ✅ Custom | ✅ Basic | LOW | 🔄 Improve |
-| **Loading States** | ✅ Skeleton | ✅ Spinner | LOW | 🔄 Add skeleton |
-| **Markdown/Code** | ✅ | ✅ | HIGH | ✅ **Keep** |
-| **Sub-agents** | ✅ Detection | ✅ Full panel | LOW | ✅ **Keep current** |
-| **Config** | ✅ Env-based | ✅ User config | HIGH | ✅ **Keep user config** |
+| Feature                 | smith-frontend              | deep-agents-ui      | Priority     | Action                      |
+| ----------------------- | --------------------------- | ------------------- | ------------ | --------------------------- |
+| **Layout System**       | ✅ ResizablePanel           | ❌ Custom grid      | **CRITICAL** | 🔄 **Port complete layout** |
+| **Thread Sidebar**      | ✅ Collapsible left sidebar | ✅ Custom sidebar   | **CRITICAL** | 🔄 **Replace completely**   |
+| **Thread Grouping**     | ✅ Time + status based      | ❌ Simple list      | **CRITICAL** | 🔄 **Port grouping logic**  |
+| **Thread Filtering**    | ✅ Status dropdown          | ❌ None             | **HIGH**     | ➕ **Add filtering**        |
+| **Thread Auto-refresh** | ✅ 5-second polling         | ❌ Manual           | **HIGH**     | ➕ **Add auto-refresh**     |
+| **Draft Thread**        | ✅ DraftContext             | ❌ None             | **HIGH**     | ➕ **Add draft system**     |
+| **Thread Status**       | ✅ Colored indicators       | ⚠️ Basic            | **HIGH**     | 🔄 **Port indicators**      |
+| **useThreads Hook**     | ✅ SWR-based                | ✅ Custom           | **HIGH**     | 🔄 **Port SWR version**     |
+| **ChatInterface**       | ✅ Inline tasks/files       | ✅ Separate sidebar | **CRITICAL** | 🔄 **Port complete UI**     |
+| **Sticky Scrolling**    | ✅ useStickToBottom         | ❌ Manual           | **HIGH**     | ➕ **Add hook**             |
+| **ChatProvider**        | ✅ Context pattern          | ❌ Direct hooks     | **HIGH**     | 🔄 **Port provider**        |
+| **LangGraph SDK**       | ✅ (v0.1.10)                | ✅ (v0.0.105)       | **HIGH**     | ⬆️ **Upgrade SDK**          |
+| **Design System**       | ✅ Custom components        | ✅ shadcn           | **HIGH**     | 🔄 **Port components**      |
+| **HITL Support**        | ✅ Full                     | ⚠️ Basic            | **MEDIUM**   | ➕ Add full support         |
+| **Test Mode**           | ✅ Checkpoints              | ✅ Debug mode       | **MEDIUM**   | ➕ Add checkpoints          |
+| **Error Handling**      | ✅ Expandable               | ✅ Basic            | **MEDIUM**   | 🔄 Port expandable          |
+| **Empty States**        | ✅ Custom                   | ✅ Basic            | LOW          | 🔄 Improve                  |
+| **Loading States**      | ✅ Skeleton                 | ✅ Spinner          | LOW          | 🔄 Add skeleton             |
+| **Markdown/Code**       | ✅                          | ✅                  | HIGH         | ✅ **Keep**                 |
+| **Sub-agents**          | ✅ Detection                | ✅ Full panel       | LOW          | ✅ **Keep current**         |
+| **Config**              | ✅ Env-based                | ✅ User config      | HIGH         | ✅ **Keep user config**     |
 
 ---
 
 ## 9. Recommended Migration Steps
 
 ### Phase 1: Dependencies & Foundation (1 day)
+
 1. **Update packages**
+
    ```bash
    # Critical dependencies
    yarn add @langchain/langgraph-sdk@^0.1.10
@@ -705,8 +747,9 @@ const {
    ```
 
 2. **Update Tailwind config**
+
    - Merge smith-frontend color variables (text-primary, bg-primary, etc.)
-   - Add display-* and caps-label-* utilities
+   - Add display-_ and caps-label-_ utilities
    - Add global scrollbar styles
    - Keep Tailwind 4.0 syntax, adapt smith-frontend patterns
 
@@ -716,9 +759,11 @@ const {
    - Adapt to Tailwind 4.0 @theme syntax if needed
 
 ### Phase 2: Thread Management System (3-4 days)
+
 **PRIORITY: Do this FIRST - Foundation for everything else**
 
 1. **Port thread hooks and utilities**
+
    - [ ] Port `useThreads` hook (SWR-based, auto-refresh)
    - [ ] Port `useThread` hook (fetch single thread state)
    - [ ] Port thread grouping logic (time-based + status)
@@ -727,6 +772,7 @@ const {
    - [ ] Port thread status color utilities
 
 2. **Port ThreadSidebar + ThreadHistoryAgentList**
+
    - [ ] Port ThreadSidebar component (header + controls)
    - [ ] Port ThreadHistoryAgentList component (main list)
    - [ ] Port ThreadRow component (individual thread)
@@ -735,6 +781,7 @@ const {
    - [ ] Test thread list rendering
 
 3. **Integrate ResizablePanel layout**
+
    - [ ] Add ResizablePanelGroup to main page
    - [ ] Configure left panel (thread sidebar, 20-35%)
    - [ ] Configure right panel (chat interface)
@@ -743,6 +790,7 @@ const {
    - [ ] **Remove old ThreadHistorySidebar component**
 
 4. **Add DraftContext**
+
    - [ ] Create DraftContext provider
    - [ ] Track unsent message input
    - [ ] Show draft thread at top of list
@@ -756,7 +804,9 @@ const {
    - [ ] Test panel resize/collapse
 
 ### Phase 3: Design System Components (2-3 days)
+
 1. **Port core components**
+
    - [ ] Port Button component with all variants
    - [ ] Port Badge component
    - [ ] Port Text component
@@ -764,11 +814,13 @@ const {
    - [ ] Create buttonStyleMap constants
 
 2. **Port input components**
+
    - [ ] Port Input/Textarea styling
    - [ ] Match focus states and borders
    - [ ] Port placeholder styles
 
 3. **Port dropdown/select**
+
    - [ ] Port Select component for status filter
    - [ ] Match dropdown styling
 
@@ -779,9 +831,11 @@ const {
    - [ ] Test interactions
 
 ### Phase 4: Chat Interface Refactor (3-4 days)
+
 **DEPENDS ON: Phase 2 (thread system) + Phase 3 (components)**
 
 1. **Create ChatProvider**
+
    - [ ] Port useChat hook with upgraded SDK
    - [ ] Add HITL support (interrupt, sendHumanResponse)
    - [ ] Add checkpoint support for test mode
@@ -789,6 +843,7 @@ const {
    - [ ] Test context distribution
 
 2. **Refactor ChatInterface**
+
    - [ ] Integrate useStickToBottom hook
    - [ ] Port sticky input positioning (adapts to empty/filled)
    - [ ] **Remove TasksFilesSidebar component**
@@ -798,6 +853,7 @@ const {
    - [ ] Match exact smith-frontend layout
 
 3. **Update ChatMessage**
+
    - [ ] Match smith-frontend structure
    - [ ] Port tool call rendering
    - [ ] Add test mode restart controls
@@ -811,19 +867,23 @@ const {
    - [ ] Match smith-frontend interaction patterns
 
 ### Phase 5: Advanced Features (2-3 days)
+
 1. **HITL Support**
+
    - [ ] Port ThreadActionsView (interrupt UI)
    - [ ] Add interrupt carousel
    - [ ] Implement sendHumanResponse
    - [ ] Test interrupt flow
 
 2. **Test Mode**
+
    - [ ] Add checkpoint recovery
    - [ ] Port restart-from-message UI
    - [ ] Port restart-from-subtask UI
    - [ ] Test single-step execution
 
 3. **Error Handling**
+
    - [ ] Port ExpandableErrorAlert component
    - [ ] Match error display patterns
    - [ ] Test error states
@@ -834,7 +894,9 @@ const {
    - [ ] Add proper loading indicators
 
 ### Phase 6: Testing & Refinement (1-2 days)
+
 1. **Integration testing**
+
    - [ ] Full thread lifecycle (create, switch, delete)
    - [ ] Chat message flow
    - [ ] File/task management inline
@@ -842,6 +904,7 @@ const {
    - [ ] Test mode functionality
 
 2. **Styling polish**
+
    - [ ] Match exact spacing from smith-frontend
    - [ ] Match typography and colors
    - [ ] Verify responsive behavior
@@ -855,7 +918,9 @@ const {
    - [ ] Test with long conversations (1000+ messages)
 
 ### Phase 7: Cleanup (1 day)
+
 1. **Remove old code**
+
    - [ ] Delete old ThreadHistorySidebar component
    - [ ] Delete TasksFilesSidebar component
    - [ ] Remove unused utilities
@@ -944,6 +1009,7 @@ src/
 ### Components to Remove
 
 ❌ **DELETE THESE:**
+
 - `src/app/components/ThreadHistorySidebar/` - Replaced by smith-frontend version
 - `src/app/components/TasksFilesSidebar/` - Tasks/files now inline in chat
 - `src/app/components/OptimizationWindow/` - Out of scope (optional to keep)
@@ -955,28 +1021,28 @@ src/
 ## 10. Code Snippets to Port
 
 ### useStickToBottom Integration
+
 ```tsx
 // In ChatInterface.tsx
-import { useStickToBottom } from 'use-stick-to-bottom';
+import { useStickToBottom } from "use-stick-to-bottom";
 
 export const ChatInterface = () => {
   const { scrollRef, contentRef } = useStickToBottom();
 
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto">
-      <div ref={contentRef}>
-        {/* Messages */}
-      </div>
+      <div ref={contentRef}>{/* Messages */}</div>
     </div>
   );
 };
 ```
 
 ### ChatProvider Pattern
+
 ```tsx
 // src/app/providers/ChatProvider.tsx
-import { createContext, useContext } from 'react';
-import { useChat } from '../hooks/useChat';
+import { createContext, useContext } from "react";
+import { useChat } from "../hooks/useChat";
 
 const ChatContext = createContext<ReturnType<typeof useChat> | null>(null);
 
@@ -987,12 +1053,14 @@ export function ChatProvider({ children, assistantId, config }) {
 
 export const useChatContext = () => {
   const context = useContext(ChatContext);
-  if (!context) throw new Error('useChatContext must be used within ChatProvider');
+  if (!context)
+    throw new Error("useChatContext must be used within ChatProvider");
   return context;
 };
 ```
 
 ### Inline Tasks/Files UI
+
 ```tsx
 // In ChatInterface.tsx
 <div className="sticky bottom-6 rounded-xl border">
@@ -1017,6 +1085,7 @@ export const useChatContext = () => {
 ## 11. Key Differences to Preserve
 
 ### Keep from deep-agents-ui
+
 1. **Next.js architecture** - Better than Vite for this use case
 2. **React 19** - Newer, keep it
 3. **Tailwind 4.0** - Newer, just adapt patterns
@@ -1025,6 +1094,7 @@ export const useChatContext = () => {
 6. **Sub-agent panel** - More comprehensive than smith-frontend
 
 ### Port from smith-frontend
+
 1. **Design system components** - Polished, consistent
 2. **Inline tasks/files UI** - Cleaner chat experience
 3. **useStickToBottom** - Better scroll UX
@@ -1039,12 +1109,14 @@ export const useChatContext = () => {
 After migration, the app should:
 
 ✅ **Match smith-frontend visual design**
+
 - Same button styles, colors, spacing
 - Same typography and text styles
 - Same chat interface layout
 - Same scrolling behavior
 
 ✅ **Support core functionality**
+
 - Connect to deployment URL
 - Specify assistant ID
 - Create and manage threads
@@ -1054,12 +1126,14 @@ After migration, the app should:
 - Manage files inline
 
 ✅ **Simplified experience**
+
 - Focus on chat interface
 - No enterprise features (unless needed)
 - Clean, minimal UI
 - Easy configuration
 
 ✅ **Technical excellence**
+
 - Proper memoization
 - Smooth scrolling
 - Fast rendering
@@ -1083,16 +1157,20 @@ After migration, the app should:
 **Total: 13-18 days** (2.5-3.5 weeks)
 
 ### Critical Path
+
 The longest dependency chain:
+
 ```
 Phase 1 (1d) → Phase 2 (4d) → Phase 3 (3d) → Phase 4 (4d) → Phase 6 (2d) = 14 days minimum
 ```
 
 ### Parallelization Opportunities
+
 - Phase 3 (Design System) can partially overlap with Phase 2 (Thread Management)
 - Phase 5 (Advanced Features) can overlap with Phase 6 (Testing)
 
 ### Risk Factors
+
 - **Thread management complexity** - Most complex part, may take longer
 - **SDK API changes** - May need adjustments when upgrading to v0.1.10
 - **Styling differences** - Tailwind 3→4 syntax differences
@@ -1105,6 +1183,7 @@ Phase 1 (1d) → Phase 2 (4d) → Phase 3 (3d) → Phase 4 (4d) → Phase 6 (2d)
 After migration, the app should:
 
 ✅ **Match smith-frontend visual design EXACTLY**
+
 - Resizable left sidebar with thread list
 - Thread grouping by time and status
 - Status indicators with colored dots
@@ -1114,6 +1193,7 @@ After migration, the app should:
 - Same scrolling behavior (sticky to bottom)
 
 ✅ **Match smith-frontend functionality COMPLETELY**
+
 - Thread list with auto-refresh (5s)
 - Thread filtering by status
 - Draft thread display
@@ -1125,6 +1205,7 @@ After migration, the app should:
 - Inline file/task management
 
 ✅ **Maintain current advantages**
+
 - User-configurable deployment URL
 - User-configurable assistant ID
 - Next.js 15 + React 19
@@ -1132,6 +1213,7 @@ After migration, the app should:
 - TypeScript strict mode
 
 ✅ **Technical excellence**
+
 - Proper memoization
 - Smooth scrolling with useStickToBottom
 - Fast rendering (virtualization if needed)
@@ -1144,7 +1226,9 @@ After migration, the app should:
 ## 13. Next Steps (IMMEDIATE)
 
 ### Week 1: Foundation + Thread System
+
 **Days 1-5**
+
 1. ✅ **Review this analysis** - Get team approval
 2. ✅ **Phase 1** - Install dependencies (Day 1)
 3. ✅ **Phase 2** - Port complete thread management (Days 2-5)
@@ -1153,19 +1237,18 @@ After migration, the app should:
    - Test thoroughly before moving on
 
 ### Week 2: Components + Chat Interface
-**Days 6-10**
-4. ✅ **Phase 3** - Port design system components (Days 6-8)
-5. ✅ **Phase 4** - Refactor ChatInterface (Days 9-10)
-   - Integrate with thread system from Phase 2
-   - Move tasks/files inline
+
+**Days 6-10** 4. ✅ **Phase 3** - Port design system components (Days 6-8) 5. ✅ **Phase 4** - Refactor ChatInterface (Days 9-10)
+
+- Integrate with thread system from Phase 2
+- Move tasks/files inline
 
 ### Week 3: Features + Polish
-**Days 11-15**
-6. ✅ **Phase 5** - Advanced features (Days 11-13)
-7. ✅ **Phase 6** - Testing & refinement (Days 14-15)
-8. ✅ **Phase 7** - Cleanup (Day 15 afternoon)
+
+**Days 11-15** 6. ✅ **Phase 5** - Advanced features (Days 11-13) 7. ✅ **Phase 6** - Testing & refinement (Days 14-15) 8. ✅ **Phase 7** - Cleanup (Day 15 afternoon)
 
 ### Testing Strategy
+
 - **Unit tests**: Test individual components
 - **Integration tests**: Test thread switching, chat flow
 - **Visual tests**: Compare side-by-side with smith-frontend
@@ -1177,6 +1260,7 @@ After migration, the app should:
 ## Appendix: File References
 
 ### smith-frontend Key Files
+
 - `/Users/nickhuang/Desktop/langchain_product/langchainplus/smith-frontend/src/Pages/AgentBuilder/features/agent-chat/components/ChatInterface.tsx`
 - `/Users/nickhuang/Desktop/langchain_product/langchainplus/smith-frontend/src/Pages/AgentBuilder/features/agent-chat/hooks/useChat.ts`
 - `/Users/nickhuang/Desktop/langchain_product/langchainplus/smith-frontend/src/design-system/components/Button/Button.tsx`
@@ -1184,6 +1268,7 @@ After migration, the app should:
 - `/Users/nickhuang/Desktop/langchain_product/langchainplus/smith-frontend/package.json`
 
 ### deep-agents-ui Key Files
+
 - `/Users/nickhuang/Desktop/applied_ai/deep-agents-ui/src/app/components/ChatInterface/ChatInterface.tsx`
 - `/Users/nickhuang/Desktop/applied_ai/deep-agents-ui/src/app/hooks/useChat.ts`
 - `/Users/nickhuang/Desktop/applied_ai/deep-agents-ui/src/components/ui/button.tsx`
@@ -1195,6 +1280,7 @@ After migration, the app should:
 ## 14. Visual Comparison Reference
 
 ### smith-frontend Layout (TARGET)
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ Breadcrumbs / Header                                            │
@@ -1221,6 +1307,7 @@ After migration, the app should:
 ```
 
 ### deep-agents-ui Current (TO REPLACE)
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ Header with Config                                              │
@@ -1240,6 +1327,7 @@ After migration, the app should:
 ```
 
 **Key Visual Differences:**
+
 1. ❌ No ResizablePanel (can't resize thread sidebar)
 2. ❌ Tasks/Files in separate right sidebar (should be inline)
 3. ❌ No thread grouping (Today, Yesterday, etc.)
@@ -1300,22 +1388,26 @@ The smith-frontend AgentBuilder chat has been **battle-tested in production** wi
 Before beginning the migration, clarify:
 
 1. **Scope**
+
    - Do we want HITL support? (interrupts, human-in-the-loop)
    - Do we want test mode? (checkpoint-based debugging)
    - Do we want SubAgentPanel? (current unique feature)
    - Do we want OptimizationWindow? (agent config optimization)
 
 2. **Timeline**
+
    - Is 2.5-3.5 weeks acceptable?
    - Can work be parallelized with multiple devs?
    - Are there hard deadlines?
 
 3. **Resources**
+
    - Who will do the migration?
    - Who can review code?
    - Who can test with real deployments?
 
 4. **Deployment**
+
    - Feature flag rollout or hard cutover?
    - How to handle existing users?
    - What's the rollback plan?

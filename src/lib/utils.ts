@@ -3,36 +3,39 @@ import { twMerge } from "tailwind-merge";
 import { BaseMessage, isBaseMessage } from "@langchain/core/messages";
 import { format } from "date-fns";
 import { startCase } from "lodash";
-import { HumanInterrupt, HumanResponseWithEdits, SubmitType } from "@/app/types/inbox";
+import {
+  HumanInterrupt,
+  HumanResponseWithEdits,
+  SubmitType,
+} from "@/app/types/inbox";
 import { validate } from "uuid";
 import { Interrupt } from "@langchain/langgraph-sdk";
 import { Deployment } from "@/app/types/types";
 import { Message, ToolMessage } from "@langchain/langgraph-sdk";
 import { ToolCall } from "@langchain/core/messages/tool";
 
-
 export function extractStringFromMessageContent(message: Message): string {
   return typeof message.content === "string"
     ? message.content
     : Array.isArray(message.content)
-      ? message.content
-          .filter(
-            (c: unknown) =>
-              (typeof c === "object" &&
-                c !== null &&
-                "type" in c &&
-                (c as { type: string }).type === "text") ||
-              typeof c === "string",
-          )
-          .map((c: unknown) =>
+    ? message.content
+        .filter(
+          (c: unknown) =>
+            (typeof c === "object" &&
+              c !== null &&
+              "type" in c &&
+              (c as { type: string }).type === "text") ||
             typeof c === "string"
-              ? c
-              : typeof c === "object" && c !== null && "text" in c
-                ? (c as { text?: string }).text || ""
-                : "",
-          )
-          .join("")
-      : "";
+        )
+        .map((c: unknown) =>
+          typeof c === "string"
+            ? c
+            : typeof c === "object" && c !== null && "text" in c
+            ? (c as { text?: string }).text || ""
+            : ""
+        )
+        .join("")
+    : "";
 }
 
 export function isPreparingToCallTaskTool(messages: Message[]): boolean {
@@ -40,7 +43,7 @@ export function isPreparingToCallTaskTool(messages: Message[]): boolean {
   return (
     (lastMessage.type === "ai" &&
       lastMessage.tool_calls?.some(
-        (call: { name?: string }) => call.name === "task",
+        (call: { name?: string }) => call.name === "task"
       )) ||
     false
   );
@@ -48,18 +51,18 @@ export function isPreparingToCallTaskTool(messages: Message[]): boolean {
 
 export function justCalledTaskTool(messages: Message[]): boolean {
   const lastAiMessage = messages.filter(
-    (message: Message) => message.type === "ai",
+    (message: Message) => message.type === "ai"
   )[-1];
   if (!lastAiMessage) return false;
   const toolMessagesAfterLastAiMessage = messages.slice(
-    messages.indexOf(lastAiMessage) + 1,
+    messages.indexOf(lastAiMessage) + 1
   );
   const taskToolCallsCompleted = toolMessagesAfterLastAiMessage.some(
-    (message) => message.type === "tool" && message.name === "task",
+    (message) => message.type === "tool" && message.name === "task"
   );
   return (
     (lastAiMessage.tool_calls?.some(
-      (call: { name?: string }) => call.name === "task",
+      (call: { name?: string }) => call.name === "task"
     ) &&
       taskToolCallsCompleted) ||
     false
@@ -76,7 +79,7 @@ You have access to the current configuration in config.yaml and the conversation
 }
 
 export function deploymentSupportsDeepAgents(
-  deployment: Deployment | undefined,
+  deployment: Deployment | undefined
 ) {
   return deployment?.supportsDeepAgents ?? false;
 }
@@ -194,11 +197,9 @@ export function extractSubAgentContent(data: unknown): string {
   return JSON.stringify(data, null, 2);
 }
 
-
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
 
 export function prettifyText(action: string) {
   return startCase(action.replace(/_/g, " "));
@@ -215,14 +216,15 @@ export function isDeployedUrl(url: string): boolean {
       parsedUrl.protocol === "https:" &&
       !parsedUrl.hostname.includes("localhost")
     );
-  } catch (_) {
+  } catch (error) {
     // If parsing fails, assume it's not a valid deployed URL
+    console.error("Error parsing URL:", error);
     return false;
   }
 }
 
 export function isArrayOfMessages(
-  value: Record<string, any>[],
+  value: Record<string, any>[]
 ): value is BaseMessage[] {
   if (
     value.every(isBaseMessage) ||
@@ -233,7 +235,7 @@ export function isArrayOfMessages(
           "id" in v &&
           "type" in v &&
           "content" in v &&
-          "additional_kwargs" in v,
+          "additional_kwargs" in v
       ))
   ) {
     return true;
@@ -252,9 +254,13 @@ export function baseMessageObject(item: unknown): string {
       toolCallText = JSON.stringify(item.tool_calls, null);
     }
     if ("type" in item) {
-      return `${item.type}:${contentText ? ` ${contentText}` : ""}${toolCallText ? ` - Tool calls: ${toolCallText}` : ""}`;
+      return `${item.type}:${contentText ? ` ${contentText}` : ""}${
+        toolCallText ? ` - Tool calls: ${toolCallText}` : ""
+      }`;
     } else if ("_getType" in item) {
-      return `${item._getType()}:${contentText ? ` ${contentText}` : ""}${toolCallText ? ` - Tool calls: ${toolCallText}` : ""}`;
+      return `${item._getType()}:${contentText ? ` ${contentText}` : ""}${
+        toolCallText ? ` - Tool calls: ${toolCallText}` : ""
+      }`;
     }
   } else if (
     typeof item === "object" &&
@@ -270,7 +276,9 @@ export function baseMessageObject(item: unknown): string {
     if ("tool_calls" in item) {
       toolCallText = JSON.stringify(item.tool_calls, null);
     }
-    return `${item.type}:${contentText ? ` ${contentText}` : ""}${toolCallText ? ` - Tool calls: ${toolCallText}` : ""}`;
+    return `${item.type}:${contentText ? ` ${contentText}` : ""}${
+      toolCallText ? ` - Tool calls: ${toolCallText}` : ""
+    }`;
   }
 
   if (typeof item === "object") {
@@ -288,17 +296,15 @@ export function unknownToPrettyDate(input: unknown): string | undefined {
     ) {
       return format(new Date(input as string), "MM/dd/yyyy hh:mm a");
     }
-  } catch (_) {
-    // failed to parse date. no-op
+  } catch (error) {
+    console.error("Error parsing date:", error);
   }
   return undefined;
 }
 
 export function createDefaultHumanResponse(
   interrupts: HumanInterrupt[],
-  initialHumanInterruptEditValue: React.MutableRefObject<
-    Record<string, string>
-  >,
+  initialHumanInterruptEditValue: React.MutableRefObject<Record<string, string>>
 ): {
   responses: HumanResponseWithEdits[];
   defaultSubmitType: SubmitType | undefined;
@@ -335,7 +341,7 @@ export function createDefaultHumanResponse(
               key: k,
               value: stringValue,
               expectedValue: initialHumanInterruptEditValue.current[k],
-            },
+            }
           );
         }
       });
@@ -404,7 +410,7 @@ export function createDefaultHumanResponse(
 
 export function haveArgsChanged(
   args: unknown,
-  initialValues: Record<string, string>,
+  initialValues: Record<string, string>
 ): boolean {
   if (typeof args !== "object" || !args) {
     return false;
@@ -442,7 +448,7 @@ export interface DeploymentInfoResponse {
  * @param deploymentUrl The URL of the deployment to fetch info from
  */
 export async function fetchDeploymentInfo(
-  deploymentUrl: string,
+  deploymentUrl: string
 ): Promise<DeploymentInfoResponse | null> {
   try {
     // Ensure deploymentUrl doesn't end with a slash

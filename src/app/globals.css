@@ -3,6 +3,18 @@
 @tailwind utilities;
 
 @layer base {
+  /* Remove default focus box-shadows */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    box-shadow: none !important;
+  }
+
+  /* Set default outline color to match brand instead of browser blue */
+  * {
+    outline-color: hsl(var(--primary));
+  }
+
   :root {
     /* App-specific color variables */
     --color-primary: #1c3c3c;
@@ -47,12 +59,10 @@
     --spacing-2xl: 3rem;
 
     /* Font family variables */
-    --font-family-base:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-      Arial, sans-serif;
-    --font-family-mono:
-      "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
-      "Courier New", monospace;
+    --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    --font-family-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
+      Consolas, "Courier New", monospace;
 
     /* Font size variables */
     --font-size-xs: 0.75rem;
@@ -79,10 +89,10 @@
     --radius-full: 9999px;
 
     /* Shadow variables */
-    --shadow-lg:
-      0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl:
-      0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
     /* Transition variables */
     --transition-base: 200ms ease;
@@ -182,9 +192,8 @@
 html,
 body {
   height: 100%;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   font-size: 1rem;
   line-height: 1.5;
   color: var(--color-text-primary);
@@ -242,9 +251,8 @@ a {
 }
 
 code {
-  font-family:
-    "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
-    monospace;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+    "Courier New", monospace;
   font-size: 0.9em;
   padding: 0.125em 0.25em;
   background-color: var(--color-surface);
@@ -252,9 +260,8 @@ code {
 }
 
 pre {
-  font-family:
-    "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
-    monospace;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+    "Courier New", monospace;
   font-size: 0.875rem;
   line-height: 1.75;
   padding: 1rem;

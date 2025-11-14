@@ -7,7 +7,7 @@ import { ConfigDialog } from "@/app/components/ConfigDialog";
 import { Button } from "@/components/ui/button";
 import { Assistant } from "@langchain/langgraph-sdk";
 import { ClientProvider } from "@/providers/ClientProvider";
-import { Settings, MessagesSquare } from "lucide-react";
+import { Settings, MessagesSquare, SquarePen } from "lucide-react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -17,7 +17,6 @@ import { ThreadList } from "@/app/components/ThreadList";
 import { ChatProvider } from "@/providers/ChatProvider";
 import { ChatInterface } from "@/app/components/ChatInterface";
 
-
 export default function HomePage() {
   const [config, setConfig] = useState<StandaloneConfig | null>(null);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
@@ -25,8 +24,9 @@ export default function HomePage() {
   const [assistantId, setAssistantId] = useQueryState("assistantId");
   const [_threadId, setThreadId] = useQueryState("threadId");
   const [sidebar, setSidebar] = useQueryState("sidebar");
-  
+
   const [mutateThreads, setMutateThreads] = useState<(() => void) | null>(null);
+  const [interruptCount, setInterruptCount] = useState(0);
 
   // On mount, check for saved config, otherwise show config dialog
   useEffect(() => {
@@ -60,9 +60,7 @@ export default function HomePage() {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">
-            Missing API Key
-          </h1>
+          <h1 className="text-2xl font-bold text-red-600">Missing API Key</h1>
           <p className="mt-2 text-muted-foreground">
             Please set NEXT_PUBLIC_LANGSMITH_API_KEY as an environment variable.
           </p>
@@ -85,10 +83,7 @@ export default function HomePage() {
             <p className="mt-2 text-muted-foreground">
               Configure your deployment to get started
             </p>
-            <Button
-              onClick={() => setConfigDialogOpen(true)}
-              className="mt-4"
-            >
+            <Button onClick={() => setConfigDialogOpen(true)} className="mt-4">
               Open Configuration
             </Button>
           </div>
@@ -117,7 +112,10 @@ export default function HomePage() {
         onSave={handleSaveConfig}
         initialConfig={config}
       />
-      <ClientProvider deploymentUrl={config.deploymentUrl} apiKey={langsmithApiKey}>
+      <ClientProvider
+        deploymentUrl={config.deploymentUrl}
+        apiKey={langsmithApiKey}
+      >
         <div className="flex h-screen flex-col">
           <header className="flex h-16 items-center justify-between border-b px-6">
             <div className="flex items-center gap-4">
@@ -131,6 +129,11 @@ export default function HomePage() {
                 >
                   <MessagesSquare className="mr-2 h-4 w-4" />
                   Threads
+                  {interruptCount > 0 && (
+                    <span className="ml-2 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] text-white">
+                      {interruptCount}
+                    </span>
+                  )}
                 </Button>
               )}
             </div>
@@ -147,6 +150,17 @@ export default function HomePage() {
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setThreadId(null)}
+                disabled={!_threadId}
+                // Make this button the same teal as used elsewhere
+                className="border-[#2F6868] bg-[#2F6868] text-white hover:bg-[#2F6868]/80"
+              >
+                <SquarePen className="mr-2 h-4 w-4" />
+                New Thread
+              </Button>
             </div>
           </header>
 
@@ -160,14 +174,17 @@ export default function HomePage() {
                   <ResizablePanel
                     id="thread-history"
                     order={1}
-                    defaultSize={30}
-                    className="relative"
+                    defaultSize={25}
+                    minSize={20}
+                    className="relative min-w-[380px]"
                   >
                     <ThreadList
                       onThreadSelect={async (id) => {
                         await setThreadId(id);
                       }}
                       onMutateReady={(fn) => setMutateThreads(() => fn)}
+                      onClose={() => setSidebar(null)}
+                      onInterruptCountChange={setInterruptCount}
                     />
                   </ResizablePanel>
                   <ResizableHandle />
@@ -188,13 +205,6 @@ export default function HomePage() {
                     debugMode={debugMode}
                     setDebugMode={setDebugMode}
                     controls={<></>}
-                    empty={
-                      <div className="flex-grow-3 flex items-center justify-center">
-                        <p className="text-muted-foreground">
-                          Start a conversation...
-                        </p>
-                      </div>
-                    }
                     skeleton={
                       <div className="flex items-center justify-center p-8">
                         <p className="text-muted-foreground">Loading...</p>

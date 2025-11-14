@@ -62,12 +62,12 @@ export function useChat({
             messages: [...(prev.messages ?? []), newMessage],
           }),
           config: { ...(activeAssistant?.config ?? {}), recursion_limit: 100 },
-        },
+        }
       );
       // Update thread list immediately when sending a message
       onHistoryRevalidate?.();
     },
-    [stream, activeAssistant?.config, onHistoryRevalidate],
+    [stream, activeAssistant?.config, onHistoryRevalidate]
   );
 
   const runSingleStep = useCallback(
@@ -75,7 +75,7 @@ export function useChat({
       messages: Message[],
       checkpoint?: Checkpoint,
       isRerunningSubagent?: boolean,
-      optimisticMessages?: Message[],
+      optimisticMessages?: Message[]
     ) => {
       if (checkpoint) {
         stream.submit(undefined, {
@@ -91,11 +91,11 @@ export function useChat({
       } else {
         stream.submit(
           { messages },
-          { config: activeAssistant?.config, interruptBefore: ["tools"] },
+          { config: activeAssistant?.config, interruptBefore: ["tools"] }
         );
       }
     },
-    [stream, activeAssistant?.config],
+    [stream, activeAssistant?.config]
   );
 
   const setFiles = useCallback(
@@ -105,7 +105,7 @@ export function useChat({
       // I think we do want to have the ability to externally manage the state
       await client.threads.updateState(threadId, { values: { files } });
     },
-    [client, threadId],
+    [client, threadId]
   );
 
   const continueStream = useCallback(
@@ -122,7 +122,7 @@ export function useChat({
       // Update thread list when continuing stream
       onHistoryRevalidate?.();
     },
-    [stream, activeAssistant?.config, onHistoryRevalidate],
+    [stream, activeAssistant?.config, onHistoryRevalidate]
   );
 
   const sendHumanResponse = useCallback(
@@ -131,7 +131,7 @@ export function useChat({
       // Update thread list when resuming from interrupt
       onHistoryRevalidate?.();
     },
-    [stream, onHistoryRevalidate],
+    [stream, onHistoryRevalidate]
   );
 
   const markCurrentThreadAsResolved = useCallback(() => {
