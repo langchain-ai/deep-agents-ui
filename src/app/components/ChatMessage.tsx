@@ -1,0 +1,219 @@
+"use client";
+
+import React, { useMemo, useState, useCallback } from "react";
+import { RotateCcw } from "lucide-react";
+import { SubAgentIndicator } from "@/app/components/SubAgentIndicator";
+import { ToolCallBox } from "@/app/components/ToolCallBox";
+import { MarkdownContent } from "@/app/components/MarkdownContent";
+import type { SubAgent, ToolCall } from "@/app/types/types";
+import { Interrupt, Message } from "@langchain/langgraph-sdk";
+import {
+  extractSubAgentContent,
+  extractStringFromMessageContent,
+  getInterruptTitle,
+} from "@/app/utils/utils";
+import { cn } from "@/lib/utils";
+
+interface ChatMessageProps {
+  message: Message;
+  toolCalls: ToolCall[];
+  onRestartFromAIMessage: (message: Message) => void;
+  onRestartFromSubTask: (toolCallId: string) => void;
+  debugMode?: boolean;
+  isLastMessage?: boolean;
+  isLoading?: boolean;
+  interrupt?: Interrupt;
+  ui?: any[];
+  stream?: any;
+}
+
+export const ChatMessage = React.memo<ChatMessageProps>(
+  ({
+    message,
+    toolCalls,
+    onRestartFromAIMessage,
+    onRestartFromSubTask,
+    debugMode,
+    isLastMessage,
+    isLoading,
+    interrupt,
+    ui,
+    stream,
+  }) => {
+    const isUser = message.type === "human";
+    const isAIMessage = message.type === "ai";
+    const messageContent = extractStringFromMessageContent(message);
+    const hasContent = messageContent && messageContent.trim() !== "";
+    const hasToolCalls = toolCalls.length > 0;
+    const subAgents = useMemo(() => {
+      return toolCalls
+        .filter((toolCall: ToolCall) => {
+          return (
+            toolCall.name === "task" &&
+            toolCall.args["subagent_type"] &&
+            toolCall.args["subagent_type"] !== "" &&
+            toolCall.args["subagent_type"] !== null
+          );
+        })
+        .map((toolCall: ToolCall) => {
+          return {
+            id: toolCall.id,
+            name: toolCall.name,
+            subAgentName: String(toolCall.args["subagent_type"] || ""),
+            input: toolCall.args,
+            output: toolCall.result ? { result: toolCall.result } : undefined,
+            status: toolCall.status,
+          } as SubAgent;
+        });
+    }, [toolCalls]);
+
+    const [expandedSubAgents, setExpandedSubAgents] = useState<
+      Record<string, boolean>
+    >({});
+    const isSubAgentExpanded = useCallback(
+      (id: string) => expandedSubAgents[id] ?? true,
+      [expandedSubAgents]
+    );
+    const toggleSubAgent = useCallback((id: string) => {
+      setExpandedSubAgents((prev) => ({
+        ...prev,
+        [id]: prev[id] === undefined ? false : !prev[id],
+      }));
+    }, []);
+
+    const interruptTitle = interrupt ? getInterruptTitle(interrupt) : "";
+
+    return (
+      <div
+        className={cn(
+          "flex w-full max-w-full overflow-x-hidden",
+          isUser && "flex-row-reverse"
+        )}
+      >
+        <div
+          className={cn(
+            "min-w-0 max-w-full",
+            isUser ? "max-w-[70%]" : "w-full"
+          )}
+        >
+          {(hasContent || debugMode) && (
+            <div className={cn("relative flex items-end gap-0")}>
+              <div
+                className={cn(
+                  "mt-4 overflow-hidden break-words text-sm font-normal leading-[150%]",
+                  isUser
+                    ? "rounded-xl rounded-br-none border border-border px-3 py-2 text-foreground"
+                    : "text-primary"
+                )}
+                style={
+                  isUser
+                    ? { backgroundColor: "var(--color-user-message-bg)" }
+                    : undefined
+                }
+              >
+                {isUser ? (
+                  <p className="m-0 whitespace-pre-wrap break-words text-sm leading-relaxed">
+                    {messageContent}
+                  </p>
+                ) : hasContent ? (
+                  <MarkdownContent content={messageContent} />
+                ) : debugMode ? (
+                  <p className="m-0 whitespace-nowrap text-xs italic">
+                    Empty Message
+                  </p>
+                ) : null}
+              </div>
+              {debugMode && isAIMessage && !(isLastMessage && isLoading) && (
+                <button
+                  onClick={() => onRestartFromAIMessage(message)}
+                  className="absolute bottom-1 right-1 -scale-x-100 rounded-full bg-black/10 p-1 transition-colors duration-200 hover:bg-black/20"
+                >
+                  <RotateCcw className="h-3 w-3 text-gray-600" />
+                </button>
+              )}
+            </div>
+          )}
+          {hasToolCalls && (
+            <div className="mt-4 flex w-full flex-col">
+              {toolCalls.map((toolCall: ToolCall, idx, arr) => {
+                if (toolCall.name === "task") return null;
+                const uiComponent = ui?.find(
+                  (u) => u.metadata?.tool_call_id === toolCall.id
+                );
+                const isInterrupted =
+                  idx === arr.length - 1 &&
+                  toolCall.name === interruptTitle &&
+                  isLastMessage;
+                return (
+                  <ToolCallBox
+                    key={toolCall.id}
+                    toolCall={toolCall}
+                    uiComponent={uiComponent}
+                    stream={stream}
+                    isInterrupted={isInterrupted}
+                  />
+                );
+              })}
+            </div>
+          )}
+          {!isUser && subAgents.length > 0 && (
+            <div className="flex w-fit max-w-full flex-col gap-4">
+              {subAgents.map((subAgent) => (
+                <div
+                  key={subAgent.id}
+                  className="flex w-full flex-col gap-2"
+                >
+                  <div className="flex items-end gap-2">
+                    <div className="w-[calc(100%-100px)]">
+                      <SubAgentIndicator
+                        subAgent={subAgent}
+                        onClick={() => toggleSubAgent(subAgent.id)}
+                        isExpanded={isSubAgentExpanded(subAgent.id)}
+                      />
+                    </div>
+                    <div className="relative h-full min-h-[40px] w-[72px] flex-shrink-0">
+                      {debugMode && subAgent.status === "completed" && (
+                        <button
+                          onClick={() => onRestartFromSubTask(subAgent.id)}
+                          className="absolute bottom-1 right-1 -scale-x-100 rounded-full bg-black/10 p-1 transition-colors duration-200 hover:bg-black/20"
+                        >
+                          <RotateCcw className="h-3 w-3 text-gray-600" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {isSubAgentExpanded(subAgent.id) && (
+                    <div className="w-full max-w-full">
+                      <div className="bg-surface border-border-light rounded-md border p-4">
+                        <h4 className="text-primary/70 mb-2 text-xs font-semibold uppercase tracking-wider">
+                          Input
+                        </h4>
+                        <div className="mb-4">
+                          <MarkdownContent
+                            content={extractSubAgentContent(subAgent.input)}
+                          />
+                        </div>
+                        {subAgent.output && (
+                          <>
+                            <h4 className="text-primary/70 mb-2 text-xs font-semibold uppercase tracking-wider">
+                              Output
+                            </h4>
+                            <MarkdownContent
+                              content={extractSubAgentContent(subAgent.output)}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+);
+
+ChatMessage.displayName = "ChatMessage";

@@ -1,0 +1,31 @@
+# dependencies
+node_modules
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+coverage
+
+# next.js
+.next
+out
+
+# production
+build
+
+# vercel
+.vercel
+
+# misc
+*.tsbuildinfo
+next-env.d.ts
+
+# lock files
+pnpm-lock.yaml
+yarn.lock
+package-lock.json

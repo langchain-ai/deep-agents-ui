@@ -1,70 +1,192 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  /* App-specific color variables */
-  --color-primary: #1c3c3c;
-  --color-user-message: #076699;
-  --color-avatar-bg: #ebe8fe;
-  --color-secondary: #1c3c3c;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-background: #f9f9f9;
-  --color-subagent-hover: #d0c9fe;
-  --color-surface: #f9fafb;
-  --color-border: #e5e7eb;
-  --color-border-light: #f3f4f6;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
+@layer base {
+  /* Remove default focus box-shadows */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    box-shadow: none !important;
+  }
 
-  /* Tailwind/Radix UI component variables */
-  --background: #f9f9f9;
-  --foreground: #111827;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --primary: #1c3c3c;
-  --primary-foreground: #ffffff;
-  --input: #e5e7eb;
-  --ring: #1c3c3c;
-  --destructive: #ef4444;
-}
+  /* Set default outline color to match brand instead of browser blue */
+  * {
+    outline-color: hsl(var(--primary));
+  }
 
-@media (prefers-color-scheme: dark) {
   :root {
     /* App-specific color variables */
-    --color-primary: #2dd4bf;
-    --color-user-message: #0ea5e9;
-    --color-avatar-bg: #4c1d95;
-    --color-secondary: #2dd4bf;
-    --color-success: #34d399;
-    --color-warning: #fbbf24;
-    --color-error: #f87171;
-    --color-background: #0f0f0f;
-    --color-subagent-hover: #6d28d9;
-    --color-surface: #1a1a1a;
-    --color-border: #2d2d2d;
-    --color-border-light: #232323;
-    --color-text-primary: #f3f4f6;
-    --color-text-secondary: #9ca3af;
-    --color-text-tertiary: #6b7280;
+    --color-primary: #1c3c3c;
+    --color-user-message: #076699;
+    --color-user-message-bg: #e8f4f8;
+    --color-avatar-bg: #e8ebeb;
+    --color-secondary: #1c3c3c;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-background: #f9f9f9;
+    --color-subagent-hover: #bbc4c4;
+    --color-surface: #f9fafb;
+    --color-border: #e5e7eb;
+    --color-border-light: #f3f4f6;
+    --color-text-primary: #111827;
+    --color-text-secondary: #6b7280;
+    --color-text-tertiary: #9ca3af;
+    --color-file-button: #ffffff;
+    --color-file-button-hover: #e5e7eb;
 
-    /* Tailwind/Radix UI component variables for dark mode */
-    --background: #0f0f0f;
-    --foreground: #f3f4f6;
-    --muted: #232323;
-    --muted-foreground: #9ca3af;
-    --primary: #2dd4bf;
-    --primary-foreground: #0f0f0f;
-    --input: #2d2d2d;
-    --ring: #2dd4bf;
-    --destructive: #f87171;
+    /* Dark theme colors */
+    --color-primary-dark: #2dd4bf;
+    --color-user-message-dark: #076699;
+    --color-avatar-bg-dark: #bcb2fd;
+    --color-secondary-dark: #2dd4bf;
+    --color-success-dark: #34d399;
+    --color-warning-dark: #fbbf24;
+    --color-error-dark: #f87171;
+    --color-background-dark: #0f0f0f;
+    --color-subagent-hover-dark: #d0c9fe;
+    --color-surface-dark: #1a1a1a;
+    --color-border-dark: #2d2d2d;
+    --color-border-light-dark: #232323;
+    --color-text-primary-dark: #f3f4f6;
+    --color-text-secondary-dark: #9ca3af;
+    --color-text-tertiary-dark: #6b7280;
+
+    /* Spacing variables */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* Font family variables */
+    --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    --font-family-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
+      Consolas, "Courier New", monospace;
+
+    /* Font size variables */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+
+    /* Font weight variables */
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+
+    /* Line height variables */
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+    /* Border radius variables */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-full: 9999px;
+
+    /* Shadow variables */
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* Transition variables */
+    --transition-base: 200ms ease;
+
+    /* Layout variables */
+    --sidebar-width: 320px;
+    --sidebar-collapsed-width: 60px;
+    --header-height: 64px;
+    --panel-width: 40vw;
+    --chat-max-width: 900px;
+
+    /* Tailwind/Radix UI component variables */
+    --radius: 0.5rem;
+    --background: 0 0% 98%;
+    --foreground: 220 13% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 13%;
+    --primary: 180 35% 17%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 13% 91%;
+    --secondary-foreground: 220 13% 13%;
+    --muted: 220 13% 95%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 13% 95%;
+    --accent-foreground: 220 13% 13%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 180 35% 17%;
+    --sidebar: 220 13% 95%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
-}
 
-@theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* App-specific color variables */
+      --color-primary: #1c3c3c;
+      --color-user-message: #065a8a;
+      --color-user-message-bg: #2d2d2d;
+      --color-avatar-bg: #1c3c3c;
+      --color-secondary: #bbc4c4;
+      --color-success: #34d399;
+      --color-warning: #fbbf24;
+      --color-error: #f87171;
+      --color-background: #202020;
+      --color-subagent-hover: #1e3f3f;
+      --color-surface: #2a2a2a;
+      --color-border: #404040;
+      --color-border-light: #353535;
+      --color-text-primary: #f3f4f6;
+      --color-text-secondary: #9ca3af;
+      --color-text-tertiary: #6b7280;
+      --color-file-button: #2a2a2a;
+      --color-file-button-hover: #353535;
+
+      /* Tailwind/Radix UI component variables for dark mode */
+      --radius: 0.5rem;
+      --background: 0 0% 13%;
+      --foreground: 220 13% 95%;
+      --card: 0 0% 18%;
+      --card-foreground: 220 13% 95%;
+      --popover: 0 0% 18%;
+      --popover-foreground: 220 13% 95%;
+      --primary: 174 72% 56%;
+      --primary-foreground: 0 0% 13%;
+      --secondary: 0 0% 25%;
+      --secondary-foreground: 220 13% 95%;
+      --muted: 0 0% 22%;
+      --muted-foreground: 220 9% 70%;
+      --accent: 0 0% 22%;
+      --accent-foreground: 220 13% 95%;
+      --destructive: 0 63% 71%;
+      --destructive-foreground: 0 0% 13%;
+      --border: 0 0% 28%;
+      --input: 0 0% 28%;
+      --ring: 174 72% 56%;
+      --sidebar: 0 0% 18%;
+      --chart-1: 220 70% 50%;
+      --chart-2: 160 60% 45%;
+      --chart-3: 30 80% 55%;
+      --chart-4: 280 65% 60%;
+      --chart-5: 340 75% 55%;
+    }
+  }
 }
 
 * {
@@ -76,9 +198,8 @@
 html,
 body {
   height: 100%;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   font-size: 1rem;
   line-height: 1.5;
   color: var(--color-text-primary);
@@ -136,9 +257,8 @@ a {
 }
 
 code {
-  font-family:
-    "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
-    monospace;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+    "Courier New", monospace;
   font-size: 0.9em;
   padding: 0.125em 0.25em;
   background-color: var(--color-surface);
@@ -146,9 +266,8 @@ code {
 }
 
 pre {
-  font-family:
-    "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
-    monospace;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+    "Courier New", monospace;
   font-size: 0.875rem;
   line-height: 1.75;
   padding: 1rem;
@@ -211,4 +330,66 @@ button {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* Optimization Window animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Custom scrollbar styles */
+.scrollbar-pretty {
+  overflow-y: scroll;
+}
+
+.scrollbar-pretty::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-pretty::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-pretty::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 9999px;
+}
+
+.scrollbar-pretty::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+/* Global diff highlighting styles */
+.word-added {
+  background-color: rgba(46, 160, 67, 0.4);
+  color: #ffffff;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.word-removed {
+  background-color: rgba(248, 81, 73, 0.4);
+  color: #ffffff;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-color: #f85149;
 }

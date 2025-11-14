@@ -1,17 +1,17 @@
 export interface ToolCall {
   id: string;
   name: string;
-  args: any;
+  args: Record<string, unknown>;
   result?: string;
-  status: "pending" | "completed" | "error";
+  status: "pending" | "completed" | "error" | "interrupted";
 }
 
 export interface SubAgent {
   id: string;
   name: string;
   subAgentName: string;
-  input: any;
-  output?: any;
+  input: Record<string, unknown>;
+  output?: Record<string, unknown>;
   status: "pending" | "active" | "completed" | "error";
 }
 
@@ -24,7 +24,6 @@ export interface TodoItem {
   id: string;
   content: string;
   status: "pending" | "in_progress" | "completed";
-  createdAt?: Date;
   updatedAt?: Date;
 }
 
