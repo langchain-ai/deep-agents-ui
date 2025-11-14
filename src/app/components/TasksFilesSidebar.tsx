@@ -73,10 +73,19 @@ export function FilesPopover({
                 onClick={() =>
                   setSelectedFile({ path: filePath, content: fileContent })
                 }
-                className="cursor-pointer space-y-1 truncate rounded-md border border-secondary bg-primary px-2 py-3 shadow-sm transition-colors hover:bg-primary-hover"
+                className="cursor-pointer space-y-1 truncate rounded-md border border-border px-2 py-3 shadow-sm transition-colors"
+                style={{
+                  backgroundColor: 'var(--color-file-button)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--color-file-button-hover)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--color-file-button)';
+                }}
               >
-                <FileText size={24} className="mx-auto text-quaternary" />
-                <span className="mx-auto block w-full truncate break-words text-center text-sm leading-relaxed text-quaternary">
+                <FileText size={24} className="mx-auto text-muted-foreground" />
+                <span className="mx-auto block w-full truncate break-words text-center text-sm leading-relaxed text-foreground">
                   {filePath}
                 </span>
               </button>

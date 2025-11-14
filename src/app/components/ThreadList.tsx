@@ -213,7 +213,7 @@ export function ThreadList({
             value={statusFilter}
             onValueChange={(v) => setStatusFilter(v as StatusFilter)}
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-fit">
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end">

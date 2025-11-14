@@ -8,7 +8,7 @@ import {
   AlertCircle,
   Loader2,
   CircleCheckBigIcon,
-  Pause,
+  StopCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToolCall } from "@/app/types/types";
@@ -61,7 +61,7 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
         case "pending":
           return <Loader2 size={14} className="animate-spin" />;
         case "interrupted":
-          return <Pause size={14} className="text-orange-500" />;
+          return <StopCircle size={14} className="text-orange-500" />;
         default:
           return <Terminal size={14} className="text-muted-foreground" />;
       }
