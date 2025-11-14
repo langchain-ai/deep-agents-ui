@@ -490,7 +490,10 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                                     size={16}
                                     className="text-success/80"
                                   />,
-                                  <span key="label" className="ml-[1px] min-w-0 truncate text-sm">
+                                  <span
+                                    key="label"
+                                    className="ml-[1px] min-w-0 truncate text-sm"
+                                  >
                                     All tasks completed
                                   </span>,
                                 ];
@@ -498,13 +501,21 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
 
                               if (activeTask != null) {
                                 return [
-                                  <div key="icon">{getStatusIcon(activeTask.status)}</div>,
-                                  <span key="label" className="ml-[1px] min-w-0 truncate text-sm">
+                                  <div key="icon">
+                                    {getStatusIcon(activeTask.status)}
+                                  </div>,
+                                  <span
+                                    key="label"
+                                    className="ml-[1px] min-w-0 truncate text-sm"
+                                  >
                                     Task{" "}
                                     {totalTasks - groupedTodos.pending.length}{" "}
                                     of {totalTasks}
                                   </span>,
-                                  <span key="content" className="min-w-0 gap-2 truncate text-sm text-muted-foreground">
+                                  <span
+                                    key="content"
+                                    className="min-w-0 gap-2 truncate text-sm text-muted-foreground"
+                                  >
                                     {activeTask.content}
                                   </span>,
                                 ];
@@ -516,7 +527,10 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                                   size={16}
                                   className="text-tertiary/70"
                                 />,
-                                <span key="label" className="ml-[1px] min-w-0 truncate text-sm">
+                                <span
+                                  key="label"
+                                  className="ml-[1px] min-w-0 truncate text-sm"
+                                >
                                   Task{" "}
                                   {totalTasks - groupedTodos.pending.length} of{" "}
                                   {totalTasks}

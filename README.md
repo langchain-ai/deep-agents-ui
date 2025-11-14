@@ -22,10 +22,12 @@ Open [http://localhost:3000](http://localhost:3000) to configure and test out yo
 When you open the app for the first time, you will be prompted to configure your deployment settings. All settings are saved in your browser's local storage.
 
 **Required Fields:**
+
 - **Deployment URL**: The URL for the LangGraph deployment you are connecting to
 - **Assistant ID**: The ID of the assistant or agent you want to use
 
 **Optional Field:**
+
 - **LangSmith API Key**: Your LangSmith API key (format: `lsv2_pt_...`). This may be required for accessing deployed LangGraph applications. You can also provide this via the `NEXT_PUBLIC_LANGSMITH_API_KEY` environment variable.
 
 You can edit these settings at any time by clicking on the Settings button in the header.

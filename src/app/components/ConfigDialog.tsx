@@ -90,7 +90,8 @@ export function ConfigDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="langsmithApiKey">
-              LangSmith API Key <span className="text-muted-foreground">(Optional)</span>
+              LangSmith API Key{" "}
+              <span className="text-muted-foreground">(Optional)</span>
             </Label>
             <Input
               id="langsmithApiKey"

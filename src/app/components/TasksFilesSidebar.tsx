@@ -75,13 +75,15 @@ export function FilesPopover({
                 }
                 className="cursor-pointer space-y-1 truncate rounded-md border border-border px-2 py-3 shadow-sm transition-colors"
                 style={{
-                  backgroundColor: 'var(--color-file-button)',
+                  backgroundColor: "var(--color-file-button)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--color-file-button-hover)';
+                  e.currentTarget.style.backgroundColor =
+                    "var(--color-file-button-hover)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--color-file-button)';
+                  e.currentTarget.style.backgroundColor =
+                    "var(--color-file-button)";
                 }}
               >
                 <FileText size={24} className="mx-auto text-muted-foreground" />

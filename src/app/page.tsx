@@ -55,9 +55,7 @@ function HomePageContent() {
   };
 
   const langsmithApiKey =
-    config?.langsmithApiKey ||
-    process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ||
-    "";
+    config?.langsmithApiKey || process.env.NEXT_PUBLIC_LANGSMITH_API_KEY || "";
 
   if (!config) {
     return (
@@ -212,11 +210,13 @@ function HomePageContent() {
 
 export default function HomePage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      }
+    >
       <HomePageContent />
     </Suspense>
   );
