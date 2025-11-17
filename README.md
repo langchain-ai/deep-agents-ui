@@ -1,6 +1,6 @@
 # 🚀🧠 Deepagents UI
 
-[Deepagents](https://github.com/langchain-ai/deepagents) is a simple, open source agent harness that implements a few generally useful tools, including planning (prior to task execution), computer access (giving the able access to a shell and a filesystem), and sub-agent delegation (isolated task execution). This is a UI for interacting with deepagents. 
+[Deepagents](https://github.com/langchain-ai/deepagents) is a simple, open source agent harness that implements a few generally useful tools, including planning (prior to task execution), computer access (giving the able access to a shell and a filesystem), and sub-agent delegation (isolated task execution). This is a UI for interacting with deepagents.
 
 ## 🚀 Quickstart
 
@@ -45,11 +45,12 @@ You will see the local LangGraph deployment log to terminal:
 ...
 ```
 
-You can get the Deployment URL and Assistant ID from the terminal output and `langgraph.json` file, respectively: 
-* Deployment URL: http://127.0.1:2024
-* Assistant ID: `research`
+You can get the Deployment URL and Assistant ID from the terminal output and `langgraph.json` file, respectively:
 
-**Open Deepagents UI** at [http://localhost:3000](http://localhost:3000) and input the Deployment URL and Assistant ID: 
+- Deployment URL: http://127.0.1:2024
+- Assistant ID: `research`
+
+**Open Deepagents UI** at [http://localhost:3000](http://localhost:3000) and input the Deployment URL and Assistant ID:
 
 - **Deployment URL**: The URL for the LangGraph deployment you are connecting to
 - **Assistant ID**: The ID of the assistant or agent you want to use
@@ -61,7 +62,7 @@ You can interact with the deployment via the chat interface and can edit setting
 
 <img width="2039" height="1495" alt="Screenshot 2025-11-17 at 1 11 27 PM" src="https://github.com/user-attachments/assets/50e1b5f3-a626-4461-9ad9-90347e471e8c" />
 
-As the deepagent runs, you can see its files in LangGraph state. 
+As the deepagent runs, you can see its files in LangGraph state.
 
 <img width="2039" height="1495" alt="Screenshot 2025-11-17 at 1 11 36 PM" src="https://github.com/user-attachments/assets/86cc6228-5414-4cf0-90f5-d206d30c005e" />
 
