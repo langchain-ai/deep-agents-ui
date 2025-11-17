@@ -15,7 +15,17 @@ $ yarn dev
 
 Deploy a deepagent: 
 
-As an example, see our [deepagents quickstart](https://github.com/langchain-ai/deepagents-quickstarts/tree/main/deep_research) repo for an example and run the `deep_research` example:
+As an example, see our [deepagents quickstart](https://github.com/langchain-ai/deepagents-quickstarts/tree/main/deep_research) repo for an example and run the `deep_research` example.
+
+The `langgraph.json` file has the assistant ID as the key:
+
+```
+  "graphs": {
+    "research": "./agent.py:agent"
+  },
+```
+
+Kick off the local LangGraph deployment:
 
 ```bash
 $ cd deepagents-quickstarts/deep_research
@@ -33,15 +43,13 @@ You will see the local LangGraph deployment log to terminal:
 - 🎨 Studio UI: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
 - 📚 API Docs: http://127.0.0.1:2024/docs
 ...
-
-[py.warnings] api_variant=local_dev assistant_id=xxxx ...
 ```
 
-You will need: 
+You can get the Deployment URL and Assistant ID from the terminal output and `langgraph.json` file, respectively: 
 * Deployment URL: http://127.0.1:2024
-* Assistant ID: xxxx
+* Assistant ID: `research`
 
-Open Deepagents UI at [http://localhost:3000](http://localhost:3000): 
+Open Deepagents UI at [http://localhost:3000](http://localhost:3000) and input the Deployment URL and Assistant ID: 
 
 - **Deployment URL**: The URL for the LangGraph deployment you are connecting to
 - **Assistant ID**: The ID of the assistant or agent you want to use
