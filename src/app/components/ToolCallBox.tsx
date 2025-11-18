@@ -20,11 +20,13 @@ interface ToolCallBoxProps {
   uiComponent?: any;
   stream?: any;
   isInterrupted?: boolean;
+  graphId?: string; // Dynamic namespace for custom UI components
 }
 
 export const ToolCallBox = React.memo<ToolCallBoxProps>(
-  ({ toolCall, uiComponent, stream, isInterrupted }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+  ({ toolCall, uiComponent, stream, isInterrupted, graphId }) => {
+    // Default to expanded if there's a custom UI component
+    const [isExpanded, setIsExpanded] = useState(() => !!uiComponent);
     const [expandedArgs, setExpandedArgs] = useState<Record<string, boolean>>(
       {}
     );
@@ -145,19 +147,19 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
           </div>
         </Button>
 
-        {isExpanded && hasContent && (
-          <div className="px-4 pb-4">
-            {uiComponent && stream ? (
-              <div className="mt-4">
-                <LoadExternalComponent
-                  key={uiComponent.id}
-                  stream={stream}
-                  message={uiComponent}
-                  namespace="deepagent"
-                  meta={{ status, args, result: result ?? "No Result Yet" }}
-                />
-              </div>
-            ) : (
+          {isExpanded && hasContent && (
+            <div className="px-4 pb-4">
+              {uiComponent && stream && graphId ? (
+                <div className="mt-4">
+                  <LoadExternalComponent
+                    key={uiComponent.id}
+                    stream={stream}
+                    message={uiComponent}
+                    namespace={graphId}
+                    meta={{ status, args, result: result ?? "No Result Yet" }}
+                  />
+                </div>
+              ) : (
               <>
                 {Object.keys(args).length > 0 && (
                   <div className="mt-4">

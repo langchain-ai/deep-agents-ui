@@ -33,12 +33,12 @@ export interface HumanInterrupt {
 
 /**
  * Human response to an agent interrupt.
- * Can be one of several types: accept, ignore, provide a response, or edit.
+ * Matches the LangGraph SDK format for resuming interrupts.
  */
-export type HumanResponse = {
-  type: "accept" | "ignore" | "response" | "edit";
-  args: null | string | ActionRequest;
-};
+export type HumanResponse =
+  | { type: "approve" }
+  | { type: "edit"; edited_action: { name: string; args: Record<string, any> } }
+  | { type: "reject"; message: string };
 
 /**
  * Extended thread status type that includes our custom statuses.
@@ -90,11 +90,6 @@ export type ThreadData<T extends Record<string, any> = Record<string, any>> =
  * Thread status with special "all" option for filtering.
  */
 export type ThreadStatusWithAll = EnhancedThreadStatus | "all";
-
-/**
- * Type of submission for human responses.
- */
-export type SubmitType = "accept" | "response" | "edit";
 
 /**
  * Configuration for an agent inbox.

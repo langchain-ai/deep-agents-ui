@@ -25,6 +25,7 @@ interface ChatMessageProps {
   interrupt?: Interrupt;
   ui?: any[];
   stream?: any;
+  graphId?: string;
 }
 
 export const ChatMessage = React.memo<ChatMessageProps>(
@@ -39,6 +40,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
     interrupt,
     ui,
     stream,
+    graphId,
   }) => {
     const isUser = message.type === "human";
     const isAIMessage = message.type === "ai";
@@ -151,6 +153,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                     uiComponent={uiComponent}
                     stream={stream}
                     isInterrupted={isInterrupted}
+                    graphId={graphId}
                   />
                 );
               })}

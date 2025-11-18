@@ -1,8 +1,13 @@
-const { blackA, green, mauve, slate, violet } = require("@radix-ui/colors");
-const plugin = require("tailwindcss/plugin");
+import { blackA, green, mauve, slate, violet } from "@radix-ui/colors";
+import plugin from "tailwindcss/plugin";
+import containerQueries from "@tailwindcss/container-queries";
+import typography from "@tailwindcss/typography";
+import forms from "@tailwindcss/forms";
+import tailwindcssAnimate from "tailwindcss-animate";
+import headlessui from "@headlessui/tailwindcss";
 
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   darkMode: ["class", '[data-joy-color-scheme="dark"]'],
   theme: {
@@ -361,11 +366,11 @@ module.exports = {
     },
   },
   plugins: [
-    require("@tailwindcss/container-queries"),
-    require("@tailwindcss/typography"),
-    require("@tailwindcss/forms"),
-    require("tailwindcss-animate"),
-    require("@headlessui/tailwindcss"),
+    containerQueries,
+    typography,
+    forms,
+    tailwindcssAnimate,
+    headlessui,
     plugin(({ addUtilities, addBase }) => {
       addBase({
         input: {

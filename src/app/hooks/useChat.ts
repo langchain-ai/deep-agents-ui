@@ -127,7 +127,8 @@ export function useChat({
 
   const sendHumanResponse = useCallback(
     (response: HumanResponse[]) => {
-      stream.submit(null, { command: { resume: response } });
+      // LangChain HITL middleware expects: Command(resume={"decisions": [...]})
+      stream.submit(null, { command: { resume: { decisions: response } } });
       // Update thread list when resuming from interrupt
       onHistoryRevalidate?.();
     },

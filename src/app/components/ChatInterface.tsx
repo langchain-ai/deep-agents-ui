@@ -20,6 +20,7 @@ import {
   FileIcon,
 } from "lucide-react";
 import { ChatMessage } from "@/app/components/ChatMessage";
+import { InterruptActions } from "@/app/components/InterruptActions";
 import type { TodoItem, ToolCall } from "@/app/types/types";
 import { Assistant, Message } from "@langchain/langgraph-sdk";
 import {
@@ -142,6 +143,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       runSingleStep,
       continueStream,
       stopStream,
+      sendHumanResponse,
     } = useChatContext();
 
     const submitDisabled = isLoading || !assistant;
@@ -442,18 +444,27 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                       interrupt={interrupt}
                       ui={messageUi}
                       stream={stream}
+                      graphId={assistant?.graph_id}
                     />
                   );
                 })}
-                {interrupt && debugMode && (
-                  <div className="mt-4">
-                    <Button
-                      onClick={handleContinue}
-                      variant="outline"
-                      className="rounded-full px-3 py-1 text-xs"
-                    >
-                      Continue
-                    </Button>
+                {interrupt && (
+                  <div className="mt-6">
+                    {debugMode ? (
+                      <Button
+                        onClick={handleContinue}
+                        variant="outline"
+                        className="rounded-full px-3 py-1 text-xs"
+                      >
+                        Continue (Debug)
+                      </Button>
+                    ) : (
+                      <InterruptActions
+                        interrupt={interrupt}
+                        onSubmit={sendHumanResponse}
+                        isLoading={isLoading}
+                      />
+                    )}
                   </div>
                 )}
               </>
