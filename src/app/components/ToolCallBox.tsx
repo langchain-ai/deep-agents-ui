@@ -20,11 +20,13 @@ interface ToolCallBoxProps {
   uiComponent?: any;
   stream?: any;
   isInterrupted?: boolean;
+  graphId?: string; // Dynamic namespace for custom UI components
 }
 
 export const ToolCallBox = React.memo<ToolCallBoxProps>(
-  ({ toolCall, uiComponent, stream, isInterrupted }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+  ({ toolCall, uiComponent, stream, isInterrupted, graphId }) => {
+    // Default to expanded if there's a custom UI component
+    const [isExpanded, setIsExpanded] = useState(() => !!uiComponent);
     const [expandedArgs, setExpandedArgs] = useState<Record<string, boolean>>(
       {}
     );
@@ -32,13 +34,33 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
     const { name, args, result, status } = useMemo(() => {
       const toolName = toolCall.name || "Unknown Tool";
       const toolArgs = toolCall.args || "{}";
-      let parsedArgs = {};
-      try {
-        parsedArgs =
-          typeof toolArgs === "string" ? JSON.parse(toolArgs) : toolArgs;
-      } catch {
-        parsedArgs = { raw: toolArgs };
+      let parsedArgs: any = {};
+      
+      // Handle string arguments that need JSON parsing
+      if (typeof toolArgs === "string") {
+        const argsStr = toolArgs;  // Store in variable for TypeScript
+        try {
+          parsedArgs = JSON.parse(argsStr);
+        } catch {
+          // First parsing failed, try sanitizing control characters
+          try {
+            // eslint-disable-next-line no-control-regex
+            const sanitized = argsStr.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+            parsedArgs = JSON.parse(sanitized);
+          } catch {
+            // Both attempts failed, show raw or truncated data
+            parsedArgs = { 
+              raw: argsStr.length > 1000 
+                ? `${argsStr.substring(0, 1000)}... (truncated, ${argsStr.length} chars total)` 
+                : argsStr 
+            };
+          }
+        }
+      } else {
+        // Already an object, use as-is
+        parsedArgs = toolArgs;
       }
+      
       const toolResult = toolCall.result || null;
       const toolStatus = isInterrupted
         ? "interrupted"
@@ -145,19 +167,19 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
           </div>
         </Button>
 
-        {isExpanded && hasContent && (
-          <div className="px-4 pb-4">
-            {uiComponent && stream ? (
-              <div className="mt-4">
-                <LoadExternalComponent
-                  key={uiComponent.id}
-                  stream={stream}
-                  message={uiComponent}
-                  namespace="deepagent"
-                  meta={{ status, args, result: result ?? "No Result Yet" }}
-                />
-              </div>
-            ) : (
+          {isExpanded && hasContent && (
+            <div className="px-4 pb-4">
+              {uiComponent && stream && graphId ? (
+                <div className="mt-4">
+                  <LoadExternalComponent
+                    key={uiComponent.id}
+                    stream={stream}
+                    message={uiComponent}
+                    namespace={graphId}
+                    meta={{ status, args, result: result ?? "No Result Yet" }}
+                  />
+                </div>
+              ) : (
               <>
                 {Object.keys(args).length > 0 && (
                   <div className="mt-4">
