@@ -142,6 +142,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       runSingleStep,
       continueStream,
       stopStream,
+      resumeInterrupt,
     } = useChatContext();
 
     const submitDisabled = isLoading || !assistant;
@@ -442,6 +443,8 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                       interrupt={interrupt}
                       ui={messageUi}
                       stream={stream}
+                      onResumeInterrupt={resumeInterrupt}
+                      graphId={assistant?.graph_id}
                     />
                   );
                 })}

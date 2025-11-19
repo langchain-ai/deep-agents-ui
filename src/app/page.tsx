@@ -85,7 +85,7 @@ function HomePageContent() {
 
   const assistant: Assistant = {
     assistant_id: config.assistantId,
-    graph_id: config.assistantId,
+    graph_id: config.graphName || config.assistantId, // Use graphName if available, otherwise UUID
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     config: {},

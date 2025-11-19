@@ -33,3 +33,9 @@ export interface Thread {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface InterruptData {
+  value: any;
+  ns?: string[];
+  scope?: string;
+}

@@ -4,6 +4,7 @@ import React, { useMemo, useState, useCallback } from "react";
 import { RotateCcw } from "lucide-react";
 import { SubAgentIndicator } from "@/app/components/SubAgentIndicator";
 import { ToolCallBox } from "@/app/components/ToolCallBox";
+import { InterruptHandler } from "@/app/components/InterruptHandler";
 import { MarkdownContent } from "@/app/components/MarkdownContent";
 import type { SubAgent, ToolCall } from "@/app/types/types";
 import { Interrupt, Message } from "@langchain/langgraph-sdk";
@@ -25,6 +26,8 @@ interface ChatMessageProps {
   interrupt?: Interrupt;
   ui?: any[];
   stream?: any;
+  onResumeInterrupt?: (value: any) => void;
+  graphId?: string;
 }
 
 export const ChatMessage = React.memo<ChatMessageProps>(
@@ -39,6 +42,8 @@ export const ChatMessage = React.memo<ChatMessageProps>(
     interrupt,
     ui,
     stream,
+    onResumeInterrupt,
+    graphId,
   }) => {
     const isUser = message.type === "human";
     const isAIMessage = message.type === "ai";
@@ -48,18 +53,24 @@ export const ChatMessage = React.memo<ChatMessageProps>(
     const subAgents = useMemo(() => {
       return toolCalls
         .filter((toolCall: ToolCall) => {
+          const args = (toolCall.args || {}) as Record<string, unknown>;
+          const subagentType = args["subagent_type"];
           return (
             toolCall.name === "task" &&
-            toolCall.args["subagent_type"] &&
-            toolCall.args["subagent_type"] !== "" &&
-            toolCall.args["subagent_type"] !== null
+            typeof subagentType === "string" &&
+            subagentType.trim() !== ""
           );
         })
         .map((toolCall: ToolCall) => {
+          const args = (toolCall.args || {}) as Record<string, unknown>;
+          const subagentType =
+            typeof args["subagent_type"] === "string"
+              ? (args["subagent_type"] as string)
+              : "";
           return {
             id: toolCall.id,
             name: toolCall.name,
-            subAgentName: String(toolCall.args["subagent_type"] || ""),
+            subAgentName: subagentType,
             input: toolCall.args,
             output: toolCall.result ? { result: toolCall.result } : undefined,
             status: toolCall.status,
@@ -137,9 +148,9 @@ export const ChatMessage = React.memo<ChatMessageProps>(
             <div className="mt-4 flex w-full flex-col">
               {toolCalls.map((toolCall: ToolCall, idx, arr) => {
                 if (toolCall.name === "task") return null;
-                const uiComponent = ui?.find(
-                  (u) => u.metadata?.tool_call_id === toolCall.id
-                );
+                const uiComponent =
+                  ui?.find((u) => u.metadata?.tool_call_id === toolCall.id) ||
+                  (ui && ui.length === 1 ? ui[0] : undefined);
                 const isInterrupted =
                   idx === arr.length - 1 &&
                   toolCall.name === interruptTitle &&
@@ -151,9 +162,32 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                     uiComponent={uiComponent}
                     stream={stream}
                     isInterrupted={isInterrupted}
+                    graphId={graphId}
                   />
                 );
               })}
+            </div>
+          )}
+          {!isUser && isLastMessage && interrupt && onResumeInterrupt && (
+            <div className="mt-4 w-full">
+              {/* 
+                Check if this is a default LangGraph interrupt (not a gen UI interrupt).
+                Gen UI interrupts are handled by LoadExternalComponent in ToolCallBox.
+                We detect default interrupts by checking if there's NO matching UI component.
+              */}
+              {(() => {
+                const hasAnyGenerativeUI = Boolean(ui && ui.length > 0);
+                if (!hasAnyGenerativeUI) {
+                  return (
+                    <InterruptHandler
+                      interrupt={interrupt}
+                      onResume={onResumeInterrupt}
+                      isLoading={isLoading}
+                    />
+                  );
+                }
+                return null;
+              })()}
             </div>
           )}
           {!isUser && subAgents.length > 0 && (

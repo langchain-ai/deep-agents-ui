@@ -36,12 +36,16 @@ export function ConfigDialog({
   const [langsmithApiKey, setLangsmithApiKey] = useState(
     initialConfig?.langsmithApiKey || ""
   );
+  const [graphName, setGraphName] = useState(
+    initialConfig?.graphName || ""
+  );
 
   useEffect(() => {
     if (open && initialConfig) {
       setDeploymentUrl(initialConfig.deploymentUrl);
       setAssistantId(initialConfig.assistantId);
       setLangsmithApiKey(initialConfig.langsmithApiKey || "");
+      setGraphName(initialConfig.graphName || "");
     }
   }, [open, initialConfig]);
 
@@ -55,6 +59,7 @@ export function ConfigDialog({
       deploymentUrl,
       assistantId,
       langsmithApiKey: langsmithApiKey || undefined,
+      graphName: graphName || undefined,
     });
     onOpenChange(false);
   };
@@ -90,6 +95,21 @@ export function ConfigDialog({
               value={assistantId}
               onChange={(e) => setAssistantId(e.target.value)}
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="graphName">
+              Graph Name{" "}
+              <span className="text-muted-foreground">(Optional, for Gen UI)</span>
+            </Label>
+            <Input
+              id="graphName"
+              placeholder="e.g., main, deepagent"
+              value={graphName}
+              onChange={(e) => setGraphName(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Only needed if your graph has generative UI components. Use the graph name from langgraph.json.
+            </p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="langsmithApiKey">

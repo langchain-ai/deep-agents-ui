@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ToolCall } from "@/app/types/types";
 import { cn } from "@/lib/utils";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
+import { GenUIErrorBoundary } from "@/app/components/GenUIErrorBoundary";
 
 interface ToolCallBoxProps {
   toolCall: ToolCall;
@@ -47,7 +48,7 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
             // eslint-disable-next-line no-control-regex
             const sanitized = argsStr.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
             parsedArgs = JSON.parse(sanitized);
-          } catch {
+      } catch {
             // Both attempts failed, show raw or truncated data
             parsedArgs = { 
               raw: argsStr.length > 1000 
@@ -170,6 +171,66 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
           {isExpanded && hasContent && (
             <div className="px-4 pb-4">
               {uiComponent && stream && graphId ? (
+                <GenUIErrorBoundary
+                  fallback={
+                    <>
+                      {Object.keys(args).length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Arguments
+                          </h4>
+                          <div className="space-y-2">
+                            {Object.entries(args).map(([key, value]) => (
+                              <div
+                                key={key}
+                                className="rounded-sm border border-border"
+                              >
+                                <button
+                                  onClick={() => toggleArgExpanded(key)}
+                                  className="flex w-full items-center justify-between bg-muted/30 p-2 text-left text-xs font-medium transition-colors hover:bg-muted/50"
+                                >
+                                  <span className="font-mono">{key}</span>
+                                  {expandedArgs[key] ? (
+                                    <ChevronUp
+                                      size={12}
+                                      className="text-muted-foreground"
+                                    />
+                                  ) : (
+                                    <ChevronDown
+                                      size={12}
+                                      className="text-muted-foreground"
+                                    />
+                                  )}
+                                </button>
+                                {expandedArgs[key] && (
+                                  <div className="border-t border-border bg-muted/20 p-2">
+                                    <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground">
+                                      {typeof value === "string"
+                                        ? value
+                                        : JSON.stringify(value, null, 2)}
+                                    </pre>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {result && (
+                        <div className="mt-4">
+                          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Result
+                          </h4>
+                          <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all rounded-sm border border-border bg-muted/40 p-2 font-mono text-xs leading-7 text-foreground">
+                            {typeof result === "string"
+                              ? result
+                              : JSON.stringify(result, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </>
+                  }
+                >
                 <div className="mt-4">
                   <LoadExternalComponent
                     key={uiComponent.id}
@@ -179,6 +240,7 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
                     meta={{ status, args, result: result ?? "No Result Yet" }}
                   />
                 </div>
+                </GenUIErrorBoundary>
               ) : (
               <>
                 {Object.keys(args).length > 0 && (
