@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Component, ReactNode } from "react";
+import { Component, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -23,10 +23,11 @@ export class GenUIErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    // Log 404 errors quietly, others as warnings
-    if (error.message?.includes("404") || error.message?.includes("UI not found")) {
-      console.log("No UI bundle found for this graph, using default view");
-    } else {
+    // Silently handle 404s when UI bundle doesn't exist for a graph
+    if (
+      !error.message?.includes("404") &&
+      !error.message?.includes("UI not found")
+    ) {
       console.warn("Error loading gen UI component:", error, errorInfo);
     }
   }

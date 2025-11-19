@@ -170,12 +170,9 @@ export const ChatMessage = React.memo<ChatMessageProps>(
           )}
           {!isUser && isLastMessage && interrupt && onResumeInterrupt && (
             <div className="mt-4 w-full">
-              {/* 
-                Check if this is a default LangGraph interrupt (not a gen UI interrupt).
-                Gen UI interrupts are handled by LoadExternalComponent in ToolCallBox.
-                We detect default interrupts by checking if there's NO matching UI component.
-              */}
               {(() => {
+                // Only show default interrupt handler if no gen UI components exist
+                // Gen UI interrupts are rendered via LoadExternalComponent in ToolCallBox
                 const hasAnyGenerativeUI = Boolean(ui && ui.length > 0);
                 if (!hasAnyGenerativeUI) {
                   return (

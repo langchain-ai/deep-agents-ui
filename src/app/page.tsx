@@ -17,7 +17,10 @@ import { ThreadList } from "@/app/components/ThreadList";
 import { ChatProvider } from "@/providers/ChatProvider";
 import { ChatInterface } from "@/app/components/ChatInterface";
 
-// Component to fetch assistant details from the API
+/**
+ * Fetches assistant details from the LangGraph API.
+ * Handles both UUIDs (deployed assistants) and graph names (local development).
+ */
 function AssistantLoader({
   assistantId,
   onAssistantLoad,
@@ -30,12 +33,11 @@ function AssistantLoader({
   useEffect(() => {
     let cancelled = false;
     
-    // Check if assistantId looks like a UUID
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assistantId);
     
     async function fetchAssistant() {
       if (isUUID) {
-        // It's a UUID - fetch the real assistant from API
+        // Fetch real assistant from API
         try {
           const assistant = await client.assistants.get(assistantId);
           if (!cancelled) {
@@ -44,7 +46,6 @@ function AssistantLoader({
         } catch (error) {
           console.error("Failed to fetch assistant:", error);
           if (!cancelled) {
-            // Fallback to creating a minimal assistant object
             onAssistantLoad({
               assistant_id: assistantId,
               graph_id: assistantId,
@@ -59,11 +60,11 @@ function AssistantLoader({
           }
         }
       } else {
-        // It's a graph name - create assistant with graph_id set to the name
+        // Use graph name directly as graph_id for LoadExternalComponent
         if (!cancelled) {
           onAssistantLoad({
             assistant_id: assistantId,
-            graph_id: assistantId, // Use the name as graph_id
+            graph_id: assistantId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             config: {},

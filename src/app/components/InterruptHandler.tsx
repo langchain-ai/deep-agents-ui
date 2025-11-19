@@ -67,14 +67,6 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
     const displayValue = useMemo(() => {
       const value = interrupt.value;
       
-      // Log to console for debugging
-      console.log("Interrupt data:", {
-        value,
-        type: typeof value,
-        ns: (interrupt as any)?.ns,
-        scope: (interrupt as any)?.scope,
-      });
-      
       if (typeof value === "string") {
         return value;
       }
@@ -98,20 +90,10 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
       // Try to parse as JSON
       try {
         const parsed = JSON.parse(resumeValue);
-        console.log("=== Interrupt Resume Debug ===");
-        console.log("Raw input:", resumeValue);
-        console.log("Parsed value:", parsed);
-        console.log("Parsed type:", typeof parsed);
-        console.log("Parsed keys:", Object.keys(parsed));
-        console.log("Has 'decisions' key:", "decisions" in parsed);
-        console.log("Calling onResume with:", parsed);
-        console.log("=============================");
         onResume(parsed);
         return;
-      } catch (error) {
+      } catch {
         // Not JSON, send as plain string
-        console.warn("Failed to parse JSON resume value, sending string instead", error);
-        console.log("Resuming with string value:", resumeValue.trim());
         onResume(resumeValue.trim());
       }
     }, [resumeValue, onResume]);
@@ -147,9 +129,6 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
             <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-md border border-purple-200 bg-white p-3 font-mono text-xs leading-relaxed text-gray-800 dark:border-purple-800 dark:bg-purple-950/40 dark:text-gray-200">
               {displayValue}
             </pre>
-            <p className="mt-2 text-xs italic text-gray-600 dark:text-gray-400">
-              Check the browser console for full interrupt details
-            </p>
           </div>
 
           {/* Error Display */}
@@ -168,11 +147,9 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
               <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => {
-                    const approveValue = {
+                    onResume({
                       decisions: [{ type: "approve" }],
-                    };
-                    console.log("Quick action: Approve", approveValue);
-                    onResume(approveValue);
+                    });
                   }}
                   disabled={isLoading}
                   size="sm"
@@ -182,11 +159,9 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
                 </Button>
                 <Button
                   onClick={() => {
-                    const rejectValue = {
+                    onResume({
                       decisions: [{ type: "reject" }],
-                    };
-                    console.log("Quick action: Reject", rejectValue);
-                    onResume(rejectValue);
+                    });
                   }}
                   disabled={isLoading}
                   size="sm"
