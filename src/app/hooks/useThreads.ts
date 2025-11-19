@@ -28,16 +28,30 @@ export function useThreads(props: {
         process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ||
         "";
 
-      if (!config || !apiKey) {
+      console.log("=== Thread Search Key Generation ===");
+      console.log("Config exists:", !!config);
+      console.log("API Key exists:", !!apiKey);
+      console.log("API Key length:", apiKey.length);
+      console.log("Config:", config);
+      console.log("====================================");
+
+      if (!config) {
+        console.warn("Skipping thread search - missing config");
         return null;
+      }
+      
+      // API key is optional for local development
+      if (!apiKey) {
+        console.log("No API key - proceeding anyway (might be local dev)");
       }
 
       // If the previous page returned no items, we've reached the end
       if (previousPageData && previousPageData.length === 0) {
+        console.log("Reached end of pages");
         return null;
       }
 
-      return {
+      const key = {
         kind: "threads" as const,
         pageIndex,
         pageSize,
@@ -46,6 +60,9 @@ export function useThreads(props: {
         apiKey,
         status: props?.status,
       };
+      
+      console.log("Generated SWR key:", key);
+      return key;
     },
     async ({
       deploymentUrl,
@@ -65,19 +82,39 @@ export function useThreads(props: {
     }) => {
       const client = new Client({
         apiUrl: deploymentUrl,
-        defaultHeaders: {
+        defaultHeaders: apiKey ? {
           "X-Api-Key": apiKey,
-        },
+        } : {},
       });
 
-      const threads = await client.threads.search({
+      // Check if assistantId is a UUID (deployed) or graph name (local)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assistantId);
+      
+      console.log("=== Thread Search Debug ===");
+      console.log("Assistant ID:", assistantId);
+      console.log("Is UUID:", isUUID);
+      console.log("Deployment URL:", deploymentUrl);
+      console.log("Has API Key:", !!apiKey);
+      console.log("Status filter:", status);
+      
+      const searchParams = {
         limit: pageSize,
         offset: pageIndex * pageSize,
-        sortBy: "updated_at",
-        sortOrder: "desc",
+        sortBy: "updated_at" as const,
+        sortOrder: "desc" as const,
         status,
-        metadata: { assistant_id: assistantId },
-      });
+        // Only filter by assistant_id metadata for deployed graphs (UUIDs)
+        // Local graphs don't set this metadata, so we fetch all threads
+        ...(isUUID ? { metadata: { assistant_id: assistantId } } : {}),
+      };
+      
+      console.log("Search params:", searchParams);
+      
+      const threads = await client.threads.search(searchParams);
+      
+      console.log("Found threads:", threads.length);
+      console.log("Thread IDs:", threads.map(t => t.thread_id));
+      console.log("========================");
 
       return threads.map((thread): ThreadItem => {
         let title = "Untitled Thread";
