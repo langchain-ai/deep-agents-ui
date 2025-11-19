@@ -2,7 +2,6 @@ export interface StandaloneConfig {
   deploymentUrl: string;
   assistantId: string;
   langsmithApiKey?: string;
-  graphName?: string; // Optional: graph name for gen UI (e.g., "main", "deepagent")
 }
 
 const CONFIG_KEY = "deep-agent-config";

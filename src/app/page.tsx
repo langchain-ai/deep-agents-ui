@@ -5,8 +5,8 @@ import { useQueryState } from "nuqs";
 import { getConfig, saveConfig, StandaloneConfig } from "@/lib/config";
 import { ConfigDialog } from "@/app/components/ConfigDialog";
 import { Button } from "@/components/ui/button";
-import { Assistant } from "@langchain/langgraph-sdk";
-import { ClientProvider } from "@/providers/ClientProvider";
+import { Assistant, Client } from "@langchain/langgraph-sdk";
+import { ClientProvider, useClient } from "@/providers/ClientProvider";
 import { Settings, MessagesSquare, SquarePen } from "lucide-react";
 import {
   ResizableHandle,
@@ -16,6 +16,75 @@ import {
 import { ThreadList } from "@/app/components/ThreadList";
 import { ChatProvider } from "@/providers/ChatProvider";
 import { ChatInterface } from "@/app/components/ChatInterface";
+
+// Component to fetch assistant details from the API
+function AssistantLoader({
+  assistantId,
+  onAssistantLoad,
+}: {
+  assistantId: string;
+  onAssistantLoad: (assistant: Assistant | null) => void;
+}) {
+  const client = useClient();
+
+  useEffect(() => {
+    let cancelled = false;
+    
+    // Check if assistantId looks like a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assistantId);
+    
+    async function fetchAssistant() {
+      if (isUUID) {
+        // It's a UUID - fetch the real assistant from API
+        try {
+          const assistant = await client.assistants.get(assistantId);
+          if (!cancelled) {
+            onAssistantLoad(assistant);
+          }
+        } catch (error) {
+          console.error("Failed to fetch assistant:", error);
+          if (!cancelled) {
+            // Fallback to creating a minimal assistant object
+            onAssistantLoad({
+              assistant_id: assistantId,
+              graph_id: assistantId,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              config: {},
+              metadata: {},
+              version: 1,
+              name: "Assistant",
+              context: {},
+            });
+          }
+        }
+      } else {
+        // It's a graph name - create assistant with graph_id set to the name
+        if (!cancelled) {
+          onAssistantLoad({
+            assistant_id: assistantId,
+            graph_id: assistantId, // Use the name as graph_id
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            config: {},
+            metadata: {},
+            version: 1,
+            name: assistantId,
+            context: {},
+          });
+        }
+      }
+    }
+
+    fetchAssistant();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [assistantId, client, onAssistantLoad]);
+
+  return null;
+}
 
 function HomePageContent() {
   const [config, setConfig] = useState<StandaloneConfig | null>(null);
@@ -27,6 +96,7 @@ function HomePageContent() {
 
   const [mutateThreads, setMutateThreads] = useState<(() => void) | null>(null);
   const [interruptCount, setInterruptCount] = useState(0);
+  const [assistant, setAssistant] = useState<Assistant | null>(null);
 
   // On mount, check for saved config, otherwise show config dialog
   useEffect(() => {
@@ -83,17 +153,6 @@ function HomePageContent() {
     );
   }
 
-  const assistant: Assistant = {
-    assistant_id: config.assistantId,
-    graph_id: config.graphName || config.assistantId, // Use graphName if available, otherwise UUID
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    config: {},
-    metadata: {},
-    version: 1,
-    name: "Default Assistant",
-    context: {},
-  };
 
   return (
     <>
@@ -107,6 +166,10 @@ function HomePageContent() {
         deploymentUrl={config.deploymentUrl}
         apiKey={langsmithApiKey}
       >
+        <AssistantLoader
+          assistantId={config.assistantId}
+          onAssistantLoad={setAssistant}
+        />
         <div className="flex h-screen flex-col">
           <header className="flex h-16 items-center justify-between border-b border-border px-6">
             <div className="flex items-center gap-4">

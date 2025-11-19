@@ -26,8 +26,8 @@ interface ToolCallBoxProps {
 
 export const ToolCallBox = React.memo<ToolCallBoxProps>(
   ({ toolCall, uiComponent, stream, isInterrupted, graphId }) => {
-    // Default to expanded if there's a custom UI component
-    const [isExpanded, setIsExpanded] = useState(() => !!uiComponent);
+    // Default to always expanded
+    const [isExpanded, setIsExpanded] = useState(true);
     const [expandedArgs, setExpandedArgs] = useState<Record<string, boolean>>(
       {}
     );
