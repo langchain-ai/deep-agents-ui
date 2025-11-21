@@ -142,6 +142,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       runSingleStep,
       continueStream,
       stopStream,
+      resumeInterrupt,
     } = useChatContext();
 
     const submitDisabled = isLoading || !assistant;
@@ -442,6 +443,8 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                       interrupt={interrupt}
                       ui={messageUi}
                       stream={stream}
+                      onResumeInterrupt={resumeInterrupt}
+                      graphId={assistant?.graph_id}
                     />
                   );
                 })}
@@ -634,7 +637,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                         Object.entries(groupedTodos)
                           .filter(([_, todos]) => todos.length > 0)
                           .map(([status, todos]) => (
-                            <div className="mb-4">
+                            <div key={status} className="mb-4">
                               <h3 className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-tertiary">
                                 {
                                   {

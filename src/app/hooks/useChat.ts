@@ -140,6 +140,15 @@ export function useChat({
     onHistoryRevalidate?.();
   }, [stream, onHistoryRevalidate]);
 
+  const resumeInterrupt = useCallback(
+    (value: any) => {
+      stream.submit(null, { command: { resume: value } });
+      // Update thread list when resuming from interrupt
+      onHistoryRevalidate?.();
+    },
+    [stream, onHistoryRevalidate]
+  );
+
   const stopStream = useCallback(() => {
     stream.stop();
   }, [stream]);
@@ -162,5 +171,6 @@ export function useChat({
     stopStream,
     sendHumanResponse,
     markCurrentThreadAsResolved,
+    resumeInterrupt,
   };
 }
