@@ -39,3 +39,19 @@ export interface InterruptData {
   ns?: string[];
   scope?: string;
 }
+
+export interface ActionRequest {
+  name: string;
+  args: Record<string, unknown>;
+  description?: string;
+}
+
+export interface ReviewConfig {
+  actionName: string;
+  allowedDecisions?: string[];
+}
+
+export interface ToolApprovalInterruptData {
+  action_requests: ActionRequest[];
+  review_configs?: ReviewConfig[];
+}

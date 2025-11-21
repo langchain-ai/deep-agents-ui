@@ -26,8 +26,8 @@ interface ToolCallBoxProps {
 
 export const ToolCallBox = React.memo<ToolCallBoxProps>(
   ({ toolCall, uiComponent, stream, isInterrupted, graphId }) => {
-    // Default to always expanded
-    const [isExpanded, setIsExpanded] = useState(true);
+    // Default to expanded if uiComponent is provided
+    const [isExpanded, setIsExpanded] = useState(() => !!uiComponent);
     const [expandedArgs, setExpandedArgs] = useState<Record<string, boolean>>(
       {}
     );
@@ -129,6 +129,13 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
         setIsExpanded(true);
       }
     }, [status, hasContent]);
+
+    // Auto-expand when UI component becomes available
+    useEffect(() => {
+      if (uiComponent && hasContent) {
+        setIsExpanded(true);
+      }
+    }, [uiComponent, hasContent]);
 
     return (
       <div

@@ -148,9 +148,10 @@ export const ChatMessage = React.memo<ChatMessageProps>(
             <div className="mt-4 flex w-full flex-col">
               {toolCalls.map((toolCall: ToolCall, idx, arr) => {
                 if (toolCall.name === "task") return null;
-                const uiComponent =
-                  ui?.find((u) => u.metadata?.tool_call_id === toolCall.id) ||
-                  (ui && ui.length === 1 ? ui[0] : undefined);
+                // Only use UI component if it explicitly matches this tool call's ID
+                const uiComponent = ui?.find(
+                  (u) => u.metadata?.tool_call_id === toolCall.id
+                );
                 const isInterrupted =
                   idx === arr.length - 1 &&
                   toolCall.name === interruptTitle &&

@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Interrupt } from "@langchain/langgraph-sdk";
+import { ToolApprovalInterrupt } from "./ToolApprovalInterrupt";
 
 interface InterruptHandlerProps {
   interrupt: Interrupt;
@@ -15,11 +16,42 @@ interface InterruptHandlerProps {
 
 export const InterruptHandler = React.memo<InterruptHandlerProps>(
   ({ interrupt, onResume, isLoading }) => {
-    // Detect if this is a deep agent tool approval interrupt and provide smart default
+    // Detect if this is a tool approval interrupt
+    const toolApprovalData = useMemo(() => {
+      const value = interrupt.value;
+      
+      // Check if this is a tool approval interrupt
+      if (
+        value &&
+        typeof value === "object" &&
+        "action_requests" in value
+      ) {
+        return {
+          actionRequests: (value as any).action_requests || [],
+          reviewConfigs: (value as any).review_configs || [],
+        };
+      }
+      
+      return null;
+    }, [interrupt.value]);
+
+    // If this is a tool approval interrupt, use the specialized component
+    if (toolApprovalData && toolApprovalData.actionRequests.length > 0) {
+      return (
+        <ToolApprovalInterrupt
+          actionRequests={toolApprovalData.actionRequests}
+          reviewConfigs={toolApprovalData.reviewConfigs}
+          onResume={onResume}
+          isLoading={isLoading}
+        />
+      );
+    }
+
+    // Otherwise, use the generic handler with smart defaults
     const suggestedResponse = useMemo(() => {
       const value = interrupt.value;
       
-      // Check if this is a deep agent tool approval interrupt
+      // Check if this is a deep agent tool approval interrupt and provide smart default
       if (
         value &&
         typeof value === "object" &&
@@ -112,21 +144,21 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
       <div className="my-4 w-full">
         <div
           className={cn(
-            "rounded-lg border-2 border-purple-500 bg-purple-50/50 p-4 dark:bg-purple-950/20"
+            "rounded-lg border-2 border-yellow-400 bg-yellow-50/50 p-4 dark:border-yellow-500 dark:bg-yellow-900/20"
           )}
         >
           {/* Interrupt Banner */}
-          <div className="mb-3 flex items-center gap-2 text-purple-700 dark:text-purple-400">
+          <div className="mb-3 flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
             <AlertCircle size={18} />
             <span className="font-semibold">Waiting for Input</span>
           </div>
 
           {/* Display Interrupt Value */}
           <div className="mb-4">
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-yellow-700 dark:text-yellow-300">
               Interrupt Message
             </h4>
-            <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-md border border-purple-200 bg-white p-3 font-mono text-xs leading-relaxed text-gray-800 dark:border-purple-800 dark:bg-purple-950/40 dark:text-gray-200">
+            <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-md border border-yellow-200 bg-white p-3 font-mono text-xs leading-relaxed text-gray-800 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-gray-200">
               {displayValue}
             </pre>
           </div>
@@ -140,8 +172,8 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
 
           {/* Quick Actions for Tool Approvals */}
           {suggestedResponse && (
-            <div className="mb-3 rounded-md border border-purple-200 bg-purple-50 p-3 dark:border-purple-700 dark:bg-purple-900/30">
-              <p className="mb-2 text-xs font-semibold text-purple-700 dark:text-purple-300">
+            <div className="mb-3 rounded-md border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-700 dark:bg-yellow-900/30">
+              <p className="mb-2 text-xs font-semibold text-yellow-700 dark:text-yellow-300">
                 Quick Actions:
               </p>
               <div className="flex flex-wrap gap-2">
@@ -173,7 +205,7 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
                   onClick={() => setShowModify(!showModify)}
                   disabled={isLoading}
                   size="sm"
-                  className="!bg-[#7C3AED] !text-white hover:!bg-[#6D28D9] focus-visible:ring-purple-500"
+                  className="!bg-yellow-600 !text-white hover:!bg-yellow-700 focus-visible:ring-yellow-500"
                 >
                   {showModify ? "Hide" : "Modify"}
                 </Button>
@@ -186,7 +218,7 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
             <div className="mb-3">
               <label
                 htmlFor="resume-input"
-                className="mb-2 block text-xs font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-400"
+                className="mb-2 block text-xs font-semibold uppercase tracking-wider text-yellow-700 dark:text-yellow-300"
               >
                 Your Response (JSON or Text)
               </label>
@@ -199,27 +231,27 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
 Plain text: "approved"
 Simple value: true
 Object: {"key": "value"}'
-                className="min-h-[120px] resize-y border-purple-300 bg-white font-mono text-sm text-gray-900 focus:border-purple-500 focus:ring-purple-500 dark:border-purple-700 dark:bg-gray-900 dark:text-gray-100"
+                className="min-h-[120px] resize-y border-yellow-300 bg-white font-mono text-sm text-gray-900 focus:border-yellow-500 focus:ring-yellow-500 dark:border-yellow-700 dark:bg-gray-900 dark:text-gray-100"
                 disabled={isLoading}
               />
               <div className="mt-2 space-y-1">
-                <p className="text-xs text-purple-600 dark:text-purple-400">
+                <p className="text-xs text-yellow-600 dark:text-yellow-400">
                   <strong>Tip:</strong> Press Cmd/Ctrl + Enter to submit. Valid JSON will be parsed automatically.
                 </p>
-                <details className="text-xs text-purple-600 dark:text-purple-400">
-                  <summary className="cursor-pointer hover:text-purple-700 dark:hover:text-purple-300">
+                <details className="text-xs text-yellow-600 dark:text-yellow-400">
+                  <summary className="cursor-pointer hover:text-yellow-700 dark:hover:text-yellow-300">
                     Response formats & examples
                   </summary>
                   <div className="mt-2 space-y-2 pl-2">
-                    <div className="rounded bg-purple-50 p-2 dark:bg-purple-950/50">
+                    <div className="rounded bg-yellow-50 p-2 dark:bg-yellow-950/50">
                       <div className="mb-1 font-semibold">Approve:</div>
                       <code className="block whitespace-pre text-[10px] leading-tight">{`{"decisions": [{"type": "approve"}]}`}</code>
                     </div>
-                    <div className="rounded bg-purple-50 p-2 dark:bg-purple-950/50">
+                    <div className="rounded bg-yellow-50 p-2 dark:bg-yellow-950/50">
                       <div className="mb-1 font-semibold">Reject:</div>
                       <code className="block whitespace-pre text-[10px] leading-tight">{`{"decisions": [{"type": "reject"}]}`}</code>
                     </div>
-                    <div className="rounded bg-purple-50 p-2 dark:bg-purple-950/50">
+                    <div className="rounded bg-yellow-50 p-2 dark:bg-yellow-950/50">
                       <div className="mb-1 font-semibold">Edit (modify args):</div>
                       <code className="block whitespace-pre text-[10px] leading-tight">{`{
   "decisions": [{
@@ -240,7 +272,7 @@ Object: {"key": "value"}'
                 <Button
                   onClick={handleResume}
                   disabled={isLoading}
-                  className="bg-purple-600 hover:bg-purple-700 focus:ring-purple-500"
+                  className="bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500"
                 >
                   {isLoading ? (
                     <>
