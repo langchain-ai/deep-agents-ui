@@ -634,7 +634,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                         Object.entries(groupedTodos)
                           .filter(([_, todos]) => todos.length > 0)
                           .map(([status, todos]) => (
-                            <div className="mb-4">
+                            <div key={status} className="mb-4">
                               <h3 className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-tertiary">
                                 {
                                   {
