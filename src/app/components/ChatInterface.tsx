@@ -226,15 +226,19 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
 
   // Parse out any action requests or review configs from the interrupt
   const actionRequestsMap: Map<string, ActionRequest> | null = useMemo(() => {
-    const actionRequests = interrupt?.value && (interrupt.value as any)["action_requests"]
+    const actionRequests =
+      interrupt?.value && (interrupt.value as any)["action_requests"];
     if (!actionRequests) return new Map<string, ActionRequest>();
     return new Map(actionRequests.map((ar: ActionRequest) => [ar.name, ar]));
   }, [interrupt]);
 
   const reviewConfigsMap: Map<string, ReviewConfig> | null = useMemo(() => {
-    const reviewConfigs = interrupt?.value && (interrupt.value as any)["review_configs"]
+    const reviewConfigs =
+      interrupt?.value && (interrupt.value as any)["review_configs"];
     if (!reviewConfigs) return new Map<string, ReviewConfig>();
-    return new Map(reviewConfigs.map((rc: ReviewConfig) => [rc.actionName, rc]));
+    return new Map(
+      reviewConfigs.map((rc: ReviewConfig) => [rc.actionName, rc])
+    );
   }, [interrupt]);
 
   return (
@@ -264,8 +268,12 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
                     message={data.message}
                     toolCalls={data.toolCalls}
                     isLoading={isLoading}
-                    actionRequestsMap={isLastMessage ? actionRequestsMap : undefined}
-                    reviewConfigsMap={isLastMessage ? reviewConfigsMap : undefined}
+                    actionRequestsMap={
+                      isLastMessage ? actionRequestsMap : undefined
+                    }
+                    reviewConfigsMap={
+                      isLastMessage ? reviewConfigsMap : undefined
+                    }
                     ui={messageUi}
                     stream={stream}
                     onResumeInterrupt={resumeInterrupt}
