@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -11,46 +11,48 @@ import {
   StopCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ToolCall } from "@/app/types/types";
+import { ToolCall, ActionRequest, ReviewConfig } from "@/app/types/types";
 import { cn } from "@/lib/utils";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
+import { ToolApprovalInterrupt } from "@/app/components/ToolApprovalInterrupt";
 
 interface ToolCallBoxProps {
   toolCall: ToolCall;
   uiComponent?: any;
   stream?: any;
-  isInterrupted?: boolean;
+  graphId?: string;
+  actionRequest?: ActionRequest;
+  reviewConfig?: ReviewConfig;
+  onResume?: (value: any) => void;
+  isLoading?: boolean;
 }
 
 export const ToolCallBox = React.memo<ToolCallBoxProps>(
-  ({ toolCall, uiComponent, stream, isInterrupted }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+  ({
+    toolCall,
+    uiComponent,
+    stream,
+    graphId,
+    actionRequest,
+    reviewConfig,
+    onResume,
+    isLoading,
+  }) => {
+    const [isExpanded, setIsExpanded] = useState(
+      () => !!uiComponent || !!actionRequest
+    );
     const [expandedArgs, setExpandedArgs] = useState<Record<string, boolean>>(
       {}
     );
 
     const { name, args, result, status } = useMemo(() => {
-      const toolName = toolCall.name || "Unknown Tool";
-      const toolArgs = toolCall.args || "{}";
-      let parsedArgs = {};
-      try {
-        parsedArgs =
-          typeof toolArgs === "string" ? JSON.parse(toolArgs) : toolArgs;
-      } catch {
-        parsedArgs = { raw: toolArgs };
-      }
-      const toolResult = toolCall.result || null;
-      const toolStatus = isInterrupted
-        ? "interrupted"
-        : toolCall.status || "completed";
-
       return {
-        name: toolName,
-        args: parsedArgs,
-        result: toolResult,
-        status: toolStatus,
+        name: toolCall.name || "Unknown Tool",
+        args: toolCall.args || {},
+        result: toolCall.result,
+        status: toolCall.status || "completed",
       };
-    }, [toolCall, isInterrupted]);
+    }, [toolCall]);
 
     const statusIcon = useMemo(() => {
       switch (status) {
@@ -100,13 +102,6 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
 
     const hasContent = result || Object.keys(args).length > 0;
 
-    // Auto-expand when status is interrupted
-    useEffect(() => {
-      if (status === "interrupted" && hasContent) {
-        setIsExpanded(true);
-      }
-    }, [status, hasContent]);
-
     return (
       <div
         className={cn(
@@ -147,14 +142,24 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
 
         {isExpanded && hasContent && (
           <div className="px-4 pb-4">
-            {uiComponent && stream ? (
+            {uiComponent && stream && graphId ? (
               <div className="mt-4">
                 <LoadExternalComponent
                   key={uiComponent.id}
                   stream={stream}
                   message={uiComponent}
-                  namespace="deepagent"
+                  namespace={graphId}
                   meta={{ status, args, result: result ?? "No Result Yet" }}
+                />
+              </div>
+            ) : actionRequest && onResume ? (
+              // Show tool approval UI when there's an action request but no GenUI
+              <div className="mt-4">
+                <ToolApprovalInterrupt
+                  actionRequest={actionRequest}
+                  reviewConfig={reviewConfig}
+                  onResume={onResume}
+                  isLoading={isLoading}
                 />
               </div>
             ) : (

@@ -28,7 +28,7 @@ export function useThreads(props: {
         process.env.NEXT_PUBLIC_LANGSMITH_API_KEY ||
         "";
 
-      if (!config || !apiKey) {
+      if (!config) {
         return null;
       }
 
@@ -65,18 +65,24 @@ export function useThreads(props: {
     }) => {
       const client = new Client({
         apiUrl: deploymentUrl,
-        defaultHeaders: {
-          "X-Api-Key": apiKey,
-        },
+        defaultHeaders: apiKey ? { "X-Api-Key": apiKey } : {},
       });
+
+      // Check if assistantId is a UUID (deployed) or graph name (local)
+      const isUUID =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          assistantId
+        );
 
       const threads = await client.threads.search({
         limit: pageSize,
         offset: pageIndex * pageSize,
-        sortBy: "updated_at",
-        sortOrder: "desc",
+        sortBy: "updated_at" as const,
+        sortOrder: "desc" as const,
         status,
-        metadata: { assistant_id: assistantId },
+        // Only filter by assistant_id metadata for deployed graphs (UUIDs)
+        // Local dev graphs don't set this metadata
+        ...(isUUID ? { metadata: { assistant_id: assistantId } } : {}),
       });
 
       return threads.map((thread): ThreadItem => {
