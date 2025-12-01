@@ -11,69 +11,49 @@ import {
   StopCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ToolCall } from "@/app/types/types";
+import { ToolCall, ActionRequest, ReviewConfig } from "@/app/types/types";
 import { cn } from "@/lib/utils";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { GenUIErrorBoundary } from "@/app/components/GenUIErrorBoundary";
+import { ToolApprovalInterrupt } from "@/app/components/ToolApprovalInterrupt";
 
 interface ToolCallBoxProps {
   toolCall: ToolCall;
   uiComponent?: any;
   stream?: any;
-  isInterrupted?: boolean;
-  graphId?: string; // Dynamic namespace for custom UI components
+  graphId?: string;
+  actionRequest?: ActionRequest;
+  reviewConfig?: ReviewConfig;
+  onResume?: (value: any) => void;
+  isLoading?: boolean;
 }
 
 export const ToolCallBox = React.memo<ToolCallBoxProps>(
-  ({ toolCall, uiComponent, stream, isInterrupted, graphId }) => {
-    // Default to expanded if uiComponent is provided
-    const [isExpanded, setIsExpanded] = useState(() => !!uiComponent);
+  ({
+    toolCall,
+    uiComponent,
+    stream,
+    graphId,
+    actionRequest,
+    reviewConfig,
+    onResume,
+    isLoading,
+  }) => {
+    const [isExpanded, setIsExpanded] = useState(
+      () => !!uiComponent || !!actionRequest
+    );
     const [expandedArgs, setExpandedArgs] = useState<Record<string, boolean>>(
       {}
     );
 
     const { name, args, result, status } = useMemo(() => {
-      const toolName = toolCall.name || "Unknown Tool";
-      const toolArgs = toolCall.args || "{}";
-      let parsedArgs: any = {};
-      
-      // Handle string arguments that need JSON parsing
-      if (typeof toolArgs === "string") {
-        const argsStr = toolArgs;  // Store in variable for TypeScript
-        try {
-          parsedArgs = JSON.parse(argsStr);
-        } catch {
-          // First parsing failed, try sanitizing control characters
-          try {
-            // eslint-disable-next-line no-control-regex
-            const sanitized = argsStr.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
-            parsedArgs = JSON.parse(sanitized);
-      } catch {
-            // Both attempts failed, show raw or truncated data
-            parsedArgs = { 
-              raw: argsStr.length > 1000 
-                ? `${argsStr.substring(0, 1000)}... (truncated, ${argsStr.length} chars total)` 
-                : argsStr 
-            };
-          }
-        }
-      } else {
-        // Already an object, use as-is
-        parsedArgs = toolArgs;
-      }
-      
-      const toolResult = toolCall.result || null;
-      const toolStatus = isInterrupted
-        ? "interrupted"
-        : toolCall.status || "completed";
-
       return {
-        name: toolName,
-        args: parsedArgs,
-        result: toolResult,
-        status: toolStatus,
+        name: toolCall.name || "Unknown Tool",
+        args: toolCall.args || {},
+        result: toolCall.result,
+        status: toolCall.status || "completed",
       };
-    }, [toolCall, isInterrupted]);
+    }, [toolCall]);
 
     const statusIcon = useMemo(() => {
       switch (status) {
@@ -123,20 +103,6 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
 
     const hasContent = result || Object.keys(args).length > 0;
 
-    // Auto-expand when status is interrupted
-    useEffect(() => {
-      if (status === "interrupted" && hasContent) {
-        setIsExpanded(true);
-      }
-    }, [status, hasContent]);
-
-    // Auto-expand when UI component becomes available
-    useEffect(() => {
-      if (uiComponent && hasContent) {
-        setIsExpanded(true);
-      }
-    }, [uiComponent, hasContent]);
-
     return (
       <div
         className={cn(
@@ -175,69 +141,69 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
           </div>
         </Button>
 
-          {isExpanded && hasContent && (
-            <div className="px-4 pb-4">
-              {uiComponent && stream && graphId ? (
-                <GenUIErrorBoundary
-                  fallback={
-                    <>
-                      {Object.keys(args).length > 0 && (
-                        <div className="mt-4">
-                          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Arguments
-                          </h4>
-                          <div className="space-y-2">
-                            {Object.entries(args).map(([key, value]) => (
-                              <div
-                                key={key}
-                                className="rounded-sm border border-border"
+        {isExpanded && hasContent && (
+          <div className="px-4 pb-4">
+            {uiComponent && stream && graphId ? (
+              <GenUIErrorBoundary
+                fallback={
+                  <>
+                    {Object.keys(args).length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Arguments
+                        </h4>
+                        <div className="space-y-2">
+                          {Object.entries(args).map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="rounded-sm border border-border"
+                            >
+                              <button
+                                onClick={() => toggleArgExpanded(key)}
+                                className="flex w-full items-center justify-between bg-muted/30 p-2 text-left text-xs font-medium transition-colors hover:bg-muted/50"
                               >
-                                <button
-                                  onClick={() => toggleArgExpanded(key)}
-                                  className="flex w-full items-center justify-between bg-muted/30 p-2 text-left text-xs font-medium transition-colors hover:bg-muted/50"
-                                >
-                                  <span className="font-mono">{key}</span>
-                                  {expandedArgs[key] ? (
-                                    <ChevronUp
-                                      size={12}
-                                      className="text-muted-foreground"
-                                    />
-                                  ) : (
-                                    <ChevronDown
-                                      size={12}
-                                      className="text-muted-foreground"
-                                    />
-                                  )}
-                                </button>
-                                {expandedArgs[key] && (
-                                  <div className="border-t border-border bg-muted/20 p-2">
-                                    <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground">
-                                      {typeof value === "string"
-                                        ? value
-                                        : JSON.stringify(value, null, 2)}
-                                    </pre>
-                                  </div>
+                                <span className="font-mono">{key}</span>
+                                {expandedArgs[key] ? (
+                                  <ChevronUp
+                                    size={12}
+                                    className="text-muted-foreground"
+                                  />
+                                ) : (
+                                  <ChevronDown
+                                    size={12}
+                                    className="text-muted-foreground"
+                                  />
                                 )}
-                              </div>
-                            ))}
-                          </div>
+                              </button>
+                              {expandedArgs[key] && (
+                                <div className="border-t border-border bg-muted/20 p-2">
+                                  <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground">
+                                    {typeof value === "string"
+                                      ? value
+                                      : JSON.stringify(value, null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      )}
-                      {result && (
-                        <div className="mt-4">
-                          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Result
-                          </h4>
-                          <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all rounded-sm border border-border bg-muted/40 p-2 font-mono text-xs leading-7 text-foreground">
-                            {typeof result === "string"
-                              ? result
-                              : JSON.stringify(result, null, 2)}
-                          </pre>
-                        </div>
-                      )}
-                    </>
-                  }
-                >
+                      </div>
+                    )}
+                    {result && (
+                      <div className="mt-4">
+                        <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Result
+                        </h4>
+                        <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all rounded-sm border border-border bg-muted/40 p-2 font-mono text-xs leading-7 text-foreground">
+                          {typeof result === "string"
+                            ? result
+                            : JSON.stringify(result, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </>
+                }
+              >
                 <div className="mt-4">
                   <LoadExternalComponent
                     key={uiComponent.id}
@@ -247,8 +213,18 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
                     meta={{ status, args, result: result ?? "No Result Yet" }}
                   />
                 </div>
-                </GenUIErrorBoundary>
-              ) : (
+              </GenUIErrorBoundary>
+            ) : actionRequest && onResume ? (
+              // Show tool approval UI when there's an action request but no GenUI
+              <div className="mt-4">
+                <ToolApprovalInterrupt
+                  actionRequests={[actionRequest]}
+                  reviewConfigs={reviewConfig ? [reviewConfig] : undefined}
+                  onResume={onResume}
+                  isLoading={isLoading}
+                />
+              </div>
+            ) : (
               <>
                 {Object.keys(args).length > 0 && (
                   <div className="mt-4">

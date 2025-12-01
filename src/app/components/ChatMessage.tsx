@@ -6,12 +6,16 @@ import { SubAgentIndicator } from "@/app/components/SubAgentIndicator";
 import { ToolCallBox } from "@/app/components/ToolCallBox";
 import { InterruptHandler } from "@/app/components/InterruptHandler";
 import { MarkdownContent } from "@/app/components/MarkdownContent";
-import type { SubAgent, ToolCall } from "@/app/types/types";
+import type {
+  SubAgent,
+  ToolCall,
+  ActionRequest,
+  ReviewConfig,
+} from "@/app/types/types";
 import { Interrupt, Message } from "@langchain/langgraph-sdk";
 import {
   extractSubAgentContent,
   extractStringFromMessageContent,
-  getInterruptTitle,
 } from "@/app/utils/utils";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +96,55 @@ export const ChatMessage = React.memo<ChatMessageProps>(
       }));
     }, []);
 
-    const interruptTitle = interrupt ? getInterruptTitle(interrupt) : "";
+    // Parse interrupt to extract action requests and review configs
+    const { actionRequests, reviewConfigs, isToolCallInterrupt } =
+      useMemo(() => {
+        if (!interrupt?.value) {
+          return {
+            actionRequests: [],
+            reviewConfigs: [],
+            isToolCallInterrupt: false,
+          };
+        }
+
+        const value = interrupt.value;
+        if (
+          value &&
+          typeof value === "object" &&
+          "action_requests" in value &&
+          Array.isArray((value as any).action_requests)
+        ) {
+          return {
+            actionRequests: (value as any).action_requests as ActionRequest[],
+            reviewConfigs: ((value as any).review_configs ||
+              []) as ReviewConfig[],
+            isToolCallInterrupt: true,
+          };
+        }
+
+        return {
+          actionRequests: [],
+          reviewConfigs: [],
+          isToolCallInterrupt: false,
+        };
+      }, [interrupt?.value]);
+
+    // Create a map of tool name -> action request for matching
+    const actionRequestByToolName = useMemo(() => {
+      const map = new Map<string, ActionRequest>();
+      for (const ar of actionRequests) {
+        map.set(ar.name, ar);
+      }
+      return map;
+    }, [actionRequests]);
+
+    // Get review config for a tool name
+    const getReviewConfigForTool = useCallback(
+      (toolName: string): ReviewConfig | undefined => {
+        return reviewConfigs.find((rc) => rc.actionName === toolName);
+      },
+      [reviewConfigs]
+    );
 
     return (
       <div
@@ -146,48 +198,49 @@ export const ChatMessage = React.memo<ChatMessageProps>(
           )}
           {hasToolCalls && (
             <div className="mt-4 flex w-full flex-col">
-              {toolCalls.map((toolCall: ToolCall, idx, arr) => {
+              {toolCalls.map((toolCall: ToolCall) => {
                 if (toolCall.name === "task") return null;
-                // Only use UI component if it explicitly matches this tool call's ID
                 const uiComponent = ui?.find(
                   (u) => u.metadata?.tool_call_id === toolCall.id
                 );
-                const isInterrupted =
-                  idx === arr.length - 1 &&
-                  toolCall.name === interruptTitle &&
-                  isLastMessage;
+                // Match action request to tool call by name
+                const actionRequest = isLastMessage
+                  ? actionRequestByToolName.get(toolCall.name)
+                  : undefined;
+                const reviewConfig = actionRequest
+                  ? getReviewConfigForTool(toolCall.name)
+                  : undefined;
+
                 return (
                   <ToolCallBox
                     key={toolCall.id}
                     toolCall={toolCall}
                     uiComponent={uiComponent}
                     stream={stream}
-                    isInterrupted={isInterrupted}
                     graphId={graphId}
+                    actionRequest={actionRequest}
+                    reviewConfig={reviewConfig}
+                    onResume={onResumeInterrupt}
+                    isLoading={isLoading}
                   />
                 );
               })}
             </div>
           )}
-          {!isUser && isLastMessage && interrupt && onResumeInterrupt && (
-            <div className="mt-4 w-full">
-              {(() => {
-                // Only show default interrupt handler if no gen UI components exist
-                // Gen UI interrupts are rendered via LoadExternalComponent in ToolCallBox
-                const hasAnyGenerativeUI = Boolean(ui && ui.length > 0);
-                if (!hasAnyGenerativeUI) {
-                  return (
-                    <InterruptHandler
-                      interrupt={interrupt}
-                      onResume={onResumeInterrupt}
-                      isLoading={isLoading}
-                    />
-                  );
-                }
-                return null;
-              })()}
-            </div>
-          )}
+          {/* Only show message-level interrupt handler for non-tool-call interrupts */}
+          {!isUser &&
+            isLastMessage &&
+            interrupt &&
+            onResumeInterrupt &&
+            !isToolCallInterrupt && (
+              <div className="mt-4 w-full">
+                <InterruptHandler
+                  interrupt={interrupt}
+                  onResume={onResumeInterrupt}
+                  isLoading={isLoading}
+                />
+              </div>
+            )}
           {!isUser && subAgents.length > 0 && (
             <div className="flex w-fit max-w-full flex-col gap-4">
               {subAgents.map((subAgent) => (

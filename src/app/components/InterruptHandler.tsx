@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Interrupt } from "@langchain/langgraph-sdk";
-import { ToolApprovalInterrupt } from "./ToolApprovalInterrupt";
 
 interface InterruptHandlerProps {
   interrupt: Interrupt;
@@ -14,86 +13,14 @@ interface InterruptHandlerProps {
   isLoading?: boolean;
 }
 
+/**
+ * Generic interrupt handler for node-level interrupts (not tool call interrupts).
+ * Tool call interrupts are handled by ToolCallBox with ToolApprovalInterrupt.
+ */
 export const InterruptHandler = React.memo<InterruptHandlerProps>(
   ({ interrupt, onResume, isLoading }) => {
-    // Detect if this is a tool approval interrupt
-    const toolApprovalData = useMemo(() => {
-      const value = interrupt.value;
-      
-      // Check if this is a tool approval interrupt
-      if (
-        value &&
-        typeof value === "object" &&
-        "action_requests" in value
-      ) {
-        return {
-          actionRequests: (value as any).action_requests || [],
-          reviewConfigs: (value as any).review_configs || [],
-        };
-      }
-      
-      return null;
-    }, [interrupt.value]);
-
-    // If this is a tool approval interrupt, use the specialized component
-    if (toolApprovalData && toolApprovalData.actionRequests.length > 0) {
-      return (
-        <ToolApprovalInterrupt
-          actionRequests={toolApprovalData.actionRequests}
-          reviewConfigs={toolApprovalData.reviewConfigs}
-          onResume={onResume}
-          isLoading={isLoading}
-        />
-      );
-    }
-
-    // Otherwise, use the generic handler with smart defaults
-    const suggestedResponse = useMemo(() => {
-      const value = interrupt.value;
-      
-      // Check if this is a deep agent tool approval interrupt and provide smart default
-      if (
-        value &&
-        typeof value === "object" &&
-        "action_requests" in value &&
-        "review_configs" in value
-      ) {
-        // Get the tool name and args from the interrupt for the edit template
-        const actionRequest = (value as any).action_requests?.[0];
-        const toolName = actionRequest?.name || "tool_name";
-        const toolArgs = actionRequest?.args || { modified: "values" };
-        
-        // This is a tool approval interrupt - suggest edit format
-        return JSON.stringify(
-          {
-            decisions: [
-              {
-                type: "edit",
-                edited_action: {
-                  name: toolName,
-                  args: toolArgs,
-                },
-              },
-            ],
-          },
-          null,
-          2
-        );
-      }
-      
-      return "";
-    }, [interrupt.value]);
-
-    const [resumeValue, setResumeValue] = useState(suggestedResponse);
+    const [resumeValue, setResumeValue] = useState("");
     const [error, setError] = useState<string | null>(null);
-    const [showModify, setShowModify] = useState(false);
-
-    // Update resume value when suggested response changes
-    React.useEffect(() => {
-      if (suggestedResponse && !resumeValue) {
-        setResumeValue(suggestedResponse);
-      }
-    }, [suggestedResponse, resumeValue]);
 
     // Display the interrupt value
     const displayValue = useMemo(() => {
@@ -113,19 +40,16 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
     const handleResume = useCallback(() => {
       setError(null);
 
-      // If no input provided, send empty string
       if (!resumeValue.trim()) {
         setError("Please enter a response value");
         return;
       }
 
-      // Try to parse as JSON
       try {
         const parsed = JSON.parse(resumeValue);
         onResume(parsed);
         return;
       } catch {
-        // Not JSON, send as plain string
         onResume(resumeValue.trim());
       }
     }, [resumeValue, onResume]);
@@ -170,125 +94,52 @@ export const InterruptHandler = React.memo<InterruptHandlerProps>(
             </div>
           )}
 
-          {/* Quick Actions for Tool Approvals */}
-          {suggestedResponse && (
-            <div className="mb-3 rounded-md border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-700 dark:bg-yellow-900/30">
-              <p className="mb-2 text-xs font-semibold text-yellow-700 dark:text-yellow-300">
-                Quick Actions:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => {
-                    onResume({
-                      decisions: [{ type: "approve" }],
-                    });
-                  }}
-                  disabled={isLoading}
-                  size="sm"
-                  className="bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-500"
-                >
-                  Approve
-                </Button>
-                <Button
-                  onClick={() => {
-                    onResume({
-                      decisions: [{ type: "reject" }],
-                    });
-                  }}
-                  disabled={isLoading}
-                  size="sm"
-                  variant="destructive"
-                >
-                  Reject
-                </Button>
-                <Button
-                  onClick={() => setShowModify(!showModify)}
-                  disabled={isLoading}
-                  size="sm"
-                  className="!bg-yellow-600 !text-white hover:!bg-yellow-700 focus-visible:ring-yellow-500"
-                >
-                  {showModify ? "Hide" : "Modify"}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Resume Input - Only show if no quick actions OR modify is toggled */}
-          {(showModify || !suggestedResponse) && (
-            <div className="mb-3">
-              <label
-                htmlFor="resume-input"
-                className="mb-2 block text-xs font-semibold uppercase tracking-wider text-yellow-700 dark:text-yellow-300"
-              >
-                Your Response (JSON or Text)
-              </label>
-              <Textarea
-                id="resume-input"
-                value={resumeValue}
-                onChange={(e) => setResumeValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder='Enter response. Examples:
+          {/* Resume Input */}
+          <div className="mb-3">
+            <label
+              htmlFor="resume-input"
+              className="mb-2 block text-xs font-semibold uppercase tracking-wider text-yellow-700 dark:text-yellow-300"
+            >
+              Your Response (JSON or Text)
+            </label>
+            <Textarea
+              id="resume-input"
+              value={resumeValue}
+              onChange={(e) => setResumeValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder='Enter response. Examples:
 Plain text: "approved"
 Simple value: true
 Object: {"key": "value"}'
-                className="min-h-[120px] resize-y border-yellow-300 bg-white font-mono text-sm text-gray-900 focus:border-yellow-500 focus:ring-yellow-500 dark:border-yellow-700 dark:bg-gray-900 dark:text-gray-100"
+              className="min-h-[120px] resize-y border-yellow-300 bg-white font-mono text-sm text-gray-900 focus:border-yellow-500 focus:ring-yellow-500 dark:border-yellow-700 dark:bg-gray-900 dark:text-gray-100"
+              disabled={isLoading}
+            />
+            <p className="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
+              <strong>Tip:</strong> Press Cmd/Ctrl + Enter to submit. Valid JSON
+              will be parsed automatically.
+            </p>
+
+            {/* Resume Button */}
+            <div className="mt-3 flex justify-end">
+              <Button
+                onClick={handleResume}
                 disabled={isLoading}
-              />
-              <div className="mt-2 space-y-1">
-                <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                  <strong>Tip:</strong> Press Cmd/Ctrl + Enter to submit. Valid JSON will be parsed automatically.
-                </p>
-                <details className="text-xs text-yellow-600 dark:text-yellow-400">
-                  <summary className="cursor-pointer hover:text-yellow-700 dark:hover:text-yellow-300">
-                    Response formats & examples
-                  </summary>
-                  <div className="mt-2 space-y-2 pl-2">
-                    <div className="rounded bg-yellow-50 p-2 dark:bg-yellow-950/50">
-                      <div className="mb-1 font-semibold">Approve:</div>
-                      <code className="block whitespace-pre text-[10px] leading-tight">{`{"decisions": [{"type": "approve"}]}`}</code>
-                    </div>
-                    <div className="rounded bg-yellow-50 p-2 dark:bg-yellow-950/50">
-                      <div className="mb-1 font-semibold">Reject:</div>
-                      <code className="block whitespace-pre text-[10px] leading-tight">{`{"decisions": [{"type": "reject"}]}`}</code>
-                    </div>
-                    <div className="rounded bg-yellow-50 p-2 dark:bg-yellow-950/50">
-                      <div className="mb-1 font-semibold">Edit (modify args):</div>
-                      <code className="block whitespace-pre text-[10px] leading-tight">{`{
-  "decisions": [{
-    "type": "edit",
-    "edited_action": {
-      "name": "tool_name",
-      "args": { "modified": "values" }
-    }
-  }]
-}`}</code>
-                    </div>
-                  </div>
-                </details>
-              </div>
-              
-              {/* Resume Button */}
-              <div className="mt-3 flex justify-end">
-                <Button
-                  onClick={handleResume}
-                  disabled={isLoading}
-                  className="bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Resuming...
-                    </>
-                  ) : (
-                    <>
-                      <PlayCircle size={16} />
-                      Resume with Custom Value
-                    </>
-                  )}
-                </Button>
-              </div>
+                className="bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Resuming...
+                  </>
+                ) : (
+                  <>
+                    <PlayCircle size={16} />
+                    Resume
+                  </>
+                )}
+              </Button>
             </div>
-          )}
+          </div>
         </div>
       </div>
     );
@@ -296,4 +147,3 @@ Object: {"key": "value"}'
 );
 
 InterruptHandler.displayName = "InterruptHandler";
-

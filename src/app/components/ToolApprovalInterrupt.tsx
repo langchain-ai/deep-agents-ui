@@ -17,7 +17,9 @@ export function ToolApprovalInterrupt({
   isLoading,
 }: ToolApprovalInterruptProps) {
   const [rejectionMessage, setRejectionMessage] = useState("");
-  const [editingActionIndex, setEditingActionIndex] = useState<number | null>(null);
+  const [editingActionIndex, setEditingActionIndex] = useState<number | null>(
+    null
+  );
   const [editedArgs, setEditedArgs] = useState<Record<string, unknown>>({});
   const [showRejectionInput, setShowRejectionInput] = useState(false);
 
@@ -30,7 +32,11 @@ export function ToolApprovalInterrupt({
   const reviewConfig = reviewConfigs?.find(
     (config) => config.actionName === actionRequest.name
   );
-  const allowedDecisions = reviewConfig?.allowedDecisions || ["approve", "reject", "edit"];
+  const allowedDecisions = reviewConfig?.allowedDecisions || [
+    "approve",
+    "reject",
+    "edit",
+  ];
 
   const handleApprove = () => {
     onResume({
@@ -44,7 +50,9 @@ export function ToolApprovalInterrupt({
         decisions: [
           {
             type: "reject",
-            ...(rejectionMessage.trim() && { message: rejectionMessage.trim() }),
+            ...(rejectionMessage.trim() && {
+              message: rejectionMessage.trim(),
+            }),
           },
         ],
       });
@@ -96,9 +104,10 @@ export function ToolApprovalInterrupt({
   const updateEditedArg = (key: string, value: string) => {
     try {
       // Try to parse as JSON if it looks like JSON
-      const parsedValue = value.trim().startsWith("{") || value.trim().startsWith("[")
-        ? JSON.parse(value)
-        : value;
+      const parsedValue =
+        value.trim().startsWith("{") || value.trim().startsWith("[")
+          ? JSON.parse(value)
+          : value;
       setEditedArgs((prev) => ({ ...prev, [key]: parsedValue }));
     } catch {
       // If parsing fails, use as string
@@ -107,12 +116,12 @@ export function ToolApprovalInterrupt({
   };
 
   return (
-    <div className="flex justify-start mt-4">
-      <div className="max-w-[80%] rounded-lg border-2 border-yellow-400 dark:border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 p-4">
+    <div className="mt-4 flex justify-start">
+      <div className="max-w-[80%] rounded-lg border-2 border-yellow-400 bg-yellow-50 p-4 dark:border-yellow-500 dark:bg-yellow-900/20">
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 uppercase">
+            <span className="text-xs font-semibold uppercase text-yellow-700 dark:text-yellow-300">
               ⚠️ Approval Required
             </span>
           </div>
@@ -127,49 +136,53 @@ export function ToolApprovalInterrupt({
           )}
 
           {/* Tool Details */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
             <div className="mb-3">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
+              <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                 Tool Name
               </span>
-              <p className="text-sm font-mono font-semibold text-gray-900 dark:text-gray-100 mt-1">
+              <p className="mt-1 font-mono text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {actionRequest.name}
               </p>
             </div>
 
             {editingActionIndex === null ? (
               <div>
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
+                <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                   Arguments
                 </span>
-                <pre className="text-xs text-gray-700 dark:text-gray-300 overflow-x-auto mt-2 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700">
+                <pre className="mt-2 overflow-x-auto rounded border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                   {JSON.stringify(actionRequest.args, null, 2)}
                 </pre>
               </div>
             ) : (
               <div>
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 block">
+                <span className="mb-2 block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                   Edit Arguments
                 </span>
-                <div className="space-y-3 mt-2">
+                <div className="mt-2 space-y-3">
                   {Object.entries(actionRequest.args).map(([key, value]) => (
                     <div key={key}>
-                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
                         {key}
                       </label>
                       <textarea
                         value={
                           editedArgs[key] !== undefined
                             ? typeof editedArgs[key] === "string"
-                              ? editedArgs[key] as string
+                              ? (editedArgs[key] as string)
                               : JSON.stringify(editedArgs[key], null, 2)
                             : typeof value === "string"
                             ? value
                             : JSON.stringify(value, null, 2)
                         }
                         onChange={(e) => updateEditedArg(key, e.target.value)}
-                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono"
-                        rows={typeof value === "string" && value.length < 100 ? 2 : 6}
+                        className="w-full rounded border border-gray-300 bg-white px-3 py-2 font-mono text-xs text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                        rows={
+                          typeof value === "string" && value.length < 100
+                            ? 2
+                            : 6
+                        }
                         disabled={isLoading}
                       />
                     </div>
@@ -182,14 +195,14 @@ export function ToolApprovalInterrupt({
           {/* Rejection Message Input */}
           {showRejectionInput && editingActionIndex === null && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Rejection Message (optional)
               </label>
               <textarea
                 value={rejectionMessage}
                 onChange={(e) => setRejectionMessage(e.target.value)}
                 placeholder="Explain why you're rejecting this action..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
+                className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                 rows={3}
                 disabled={isLoading}
               />
@@ -203,18 +216,18 @@ export function ToolApprovalInterrupt({
                 <button
                   onClick={cancelEditing}
                   disabled={isLoading}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   Cancel Edit
                 </button>
                 <button
                   onClick={handleEdit}
                   disabled={isLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isLoading ? (
                     <>
-                      <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                      <div className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       Saving...
                     </>
                   ) : (
@@ -230,18 +243,18 @@ export function ToolApprovalInterrupt({
                     setRejectionMessage("");
                   }}
                   disabled={isLoading}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleRejectConfirm}
                   disabled={isLoading}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isLoading ? (
                     <>
-                      <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                      <div className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       Rejecting...
                     </>
                   ) : (
@@ -255,7 +268,7 @@ export function ToolApprovalInterrupt({
                   <button
                     onClick={handleReject}
                     disabled={isLoading}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Reject
                   </button>
@@ -264,7 +277,7 @@ export function ToolApprovalInterrupt({
                   <button
                     onClick={startEditing}
                     disabled={isLoading}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg bg-yellow-600 px-4 py-2 text-sm text-white transition-colors hover:bg-yellow-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Edit
                   </button>
@@ -273,11 +286,11 @@ export function ToolApprovalInterrupt({
                   <button
                     onClick={handleApprove}
                     disabled={isLoading}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg bg-green-600 px-4 py-2 text-sm text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isLoading ? (
                       <>
-                        <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                        <div className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                         Approving...
                       </>
                     ) : (
@@ -293,4 +306,3 @@ export function ToolApprovalInterrupt({
     </div>
   );
 }
-

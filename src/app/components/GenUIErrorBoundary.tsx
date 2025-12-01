@@ -40,4 +40,3 @@ export class GenUIErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-

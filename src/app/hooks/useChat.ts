@@ -11,7 +11,6 @@ import { v4 as uuidv4 } from "uuid";
 import type { UseStreamThread } from "@langchain/langgraph-sdk/react";
 import type { TodoItem } from "@/app/types/types";
 import { useClient } from "@/providers/ClientProvider";
-import { HumanResponse } from "@/app/types/inbox";
 import { useQueryState } from "nuqs";
 
 export type StateType = {
@@ -125,15 +124,6 @@ export function useChat({
     [stream, activeAssistant?.config, onHistoryRevalidate]
   );
 
-  const sendHumanResponse = useCallback(
-    (response: HumanResponse[]) => {
-      stream.submit(null, { command: { resume: response } });
-      // Update thread list when resuming from interrupt
-      onHistoryRevalidate?.();
-    },
-    [stream, onHistoryRevalidate]
-  );
-
   const markCurrentThreadAsResolved = useCallback(() => {
     stream.submit(null, { command: { goto: "__end__", update: null } });
     // Update thread list when marking thread as resolved
@@ -169,7 +159,6 @@ export function useChat({
     runSingleStep,
     continueStream,
     stopStream,
-    sendHumanResponse,
     markCurrentThreadAsResolved,
     resumeInterrupt,
   };
