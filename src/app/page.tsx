@@ -31,8 +31,7 @@ function HomePageInner({
   handleSaveConfig,
 }: HomePageInnerProps) {
   const client = useClient();
-  const [debugMode] = useState(false);
-  const [_threadId, setThreadId] = useQueryState("threadId");
+  const [threadId, setThreadId] = useQueryState("threadId");
   const [sidebar, setSidebar] = useQueryState("sidebar");
 
   const [mutateThreads, setMutateThreads] = useState<(() => void) | null>(null);
@@ -149,7 +148,7 @@ function HomePageInner({
               variant="outline"
               size="sm"
               onClick={() => setThreadId(null)}
-              disabled={!_threadId}
+              disabled={!threadId}
               className="border-[#2F6868] bg-[#2F6868] text-white hover:bg-[#2F6868]/80"
             >
               <SquarePen className="mr-2 h-4 w-4" />
@@ -194,16 +193,7 @@ function HomePageInner({
                 activeAssistant={assistant}
                 onHistoryRevalidate={() => mutateThreads?.()}
               >
-                <ChatInterface
-                  assistant={assistant}
-                  debugMode={debugMode}
-                  controls={<></>}
-                  skeleton={
-                    <div className="flex items-center justify-center p-8">
-                      <p className="text-muted-foreground">Loading...</p>
-                    </div>
-                  }
-                />
+                <ChatInterface assistant={assistant} />
               </ChatProvider>
             </ResizablePanel>
           </ResizablePanelGroup>

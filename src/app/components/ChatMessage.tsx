@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useMemo, useState, useCallback } from "react";
-import { RotateCcw } from "lucide-react";
 import { SubAgentIndicator } from "@/app/components/SubAgentIndicator";
 import { ToolCallBox } from "@/app/components/ToolCallBox";
-import { InterruptHandler } from "@/app/components/InterruptHandler";
 import { MarkdownContent } from "@/app/components/MarkdownContent";
 import type {
   SubAgent,
@@ -12,7 +10,7 @@ import type {
   ActionRequest,
   ReviewConfig,
 } from "@/app/types/types";
-import { Interrupt, Message } from "@langchain/langgraph-sdk";
+import { Message } from "@langchain/langgraph-sdk";
 import {
   extractSubAgentContent,
   extractStringFromMessageContent,
@@ -22,12 +20,9 @@ import { cn } from "@/lib/utils";
 interface ChatMessageProps {
   message: Message;
   toolCalls: ToolCall[];
-  onRestartFromAIMessage: (message: Message) => void;
-  onRestartFromSubTask: (toolCallId: string) => void;
-  debugMode?: boolean;
-  isLastMessage?: boolean;
   isLoading?: boolean;
-  interrupt?: Interrupt;
+  actionRequestsMap?: Map<string, ActionRequest>;
+  reviewConfigsMap?: Map<string, ReviewConfig>;
   ui?: any[];
   stream?: any;
   onResumeInterrupt?: (value: any) => void;
@@ -38,39 +33,32 @@ export const ChatMessage = React.memo<ChatMessageProps>(
   ({
     message,
     toolCalls,
-    onRestartFromAIMessage,
-    onRestartFromSubTask,
-    debugMode,
-    isLastMessage,
     isLoading,
-    interrupt,
+    actionRequestsMap,
+    reviewConfigsMap,
     ui,
     stream,
     onResumeInterrupt,
     graphId,
   }) => {
     const isUser = message.type === "human";
-    const isAIMessage = message.type === "ai";
     const messageContent = extractStringFromMessageContent(message);
     const hasContent = messageContent && messageContent.trim() !== "";
     const hasToolCalls = toolCalls.length > 0;
     const subAgents = useMemo(() => {
       return toolCalls
         .filter((toolCall: ToolCall) => {
-          const args = (toolCall.args || {}) as Record<string, unknown>;
-          const subagentType = args["subagent_type"];
           return (
             toolCall.name === "task" &&
-            typeof subagentType === "string" &&
-            subagentType.trim() !== ""
+            toolCall.args["subagent_type"] &&
+            toolCall.args["subagent_type"] !== "" &&
+            toolCall.args["subagent_type"] !== null
           );
         })
         .map((toolCall: ToolCall) => {
-          const args = (toolCall.args || {}) as Record<string, unknown>;
-          const subagentType =
-            typeof args["subagent_type"] === "string"
-              ? (args["subagent_type"] as string)
-              : "";
+          const subagentType = (toolCall.args as Record<string, unknown>)[
+            "subagent_type"
+          ] as string;
           return {
             id: toolCall.id,
             name: toolCall.name,
@@ -96,56 +84,6 @@ export const ChatMessage = React.memo<ChatMessageProps>(
       }));
     }, []);
 
-    // Parse interrupt to extract action requests and review configs
-    const { actionRequests, reviewConfigs, isToolCallInterrupt } =
-      useMemo(() => {
-        if (!interrupt?.value) {
-          return {
-            actionRequests: [],
-            reviewConfigs: [],
-            isToolCallInterrupt: false,
-          };
-        }
-
-        const value = interrupt.value;
-        if (
-          value &&
-          typeof value === "object" &&
-          "action_requests" in value &&
-          Array.isArray((value as any).action_requests)
-        ) {
-          return {
-            actionRequests: (value as any).action_requests as ActionRequest[],
-            reviewConfigs: ((value as any).review_configs ||
-              []) as ReviewConfig[],
-            isToolCallInterrupt: true,
-          };
-        }
-
-        return {
-          actionRequests: [],
-          reviewConfigs: [],
-          isToolCallInterrupt: false,
-        };
-      }, [interrupt?.value]);
-
-    // Create a map of tool name -> action request for matching
-    const actionRequestByToolName = useMemo(() => {
-      const map = new Map<string, ActionRequest>();
-      for (const ar of actionRequests) {
-        map.set(ar.name, ar);
-      }
-      return map;
-    }, [actionRequests]);
-
-    // Get review config for a tool name
-    const getReviewConfigForTool = useCallback(
-      (toolName: string): ReviewConfig | undefined => {
-        return reviewConfigs.find((rc) => rc.actionName === toolName);
-      },
-      [reviewConfigs]
-    );
-
     return (
       <div
         className={cn(
@@ -159,7 +97,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
             isUser ? "max-w-[70%]" : "w-full"
           )}
         >
-          {(hasContent || debugMode) && (
+          {hasContent && (
             <div className={cn("relative flex items-end gap-0")}>
               <div
                 className={cn(
@@ -180,42 +118,24 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                   </p>
                 ) : hasContent ? (
                   <MarkdownContent content={messageContent} />
-                ) : debugMode ? (
-                  <p className="m-0 whitespace-nowrap text-xs italic">
-                    Empty Message
-                  </p>
                 ) : null}
               </div>
-              {debugMode && isAIMessage && !(isLastMessage && isLoading) && (
-                <button
-                  onClick={() => onRestartFromAIMessage(message)}
-                  className="absolute bottom-1 right-1 -scale-x-100 rounded-full bg-black/10 p-1 transition-colors duration-200 hover:bg-black/20"
-                >
-                  <RotateCcw className="h-3 w-3 text-gray-600" />
-                </button>
-              )}
             </div>
           )}
           {hasToolCalls && (
             <div className="mt-4 flex w-full flex-col">
               {toolCalls.map((toolCall: ToolCall) => {
                 if (toolCall.name === "task") return null;
-                const uiComponent = ui?.find(
+                const toolCallGenUiComponent = ui?.find(
                   (u) => u.metadata?.tool_call_id === toolCall.id
                 );
-                // Match action request to tool call by name
-                const actionRequest = isLastMessage
-                  ? actionRequestByToolName.get(toolCall.name)
-                  : undefined;
-                const reviewConfig = actionRequest
-                  ? getReviewConfigForTool(toolCall.name)
-                  : undefined;
-
+                const actionRequest = actionRequestsMap?.get(toolCall.name);
+                const reviewConfig = reviewConfigsMap?.get(toolCall.name);
                 return (
                   <ToolCallBox
                     key={toolCall.id}
                     toolCall={toolCall}
-                    uiComponent={uiComponent}
+                    uiComponent={toolCallGenUiComponent}
                     stream={stream}
                     graphId={graphId}
                     actionRequest={actionRequest}
@@ -227,20 +147,6 @@ export const ChatMessage = React.memo<ChatMessageProps>(
               })}
             </div>
           )}
-          {/* Only show message-level interrupt handler for non-tool-call interrupts */}
-          {!isUser &&
-            isLastMessage &&
-            interrupt &&
-            onResumeInterrupt &&
-            !isToolCallInterrupt && (
-              <div className="mt-4 w-full">
-                <InterruptHandler
-                  interrupt={interrupt}
-                  onResume={onResumeInterrupt}
-                  isLoading={isLoading}
-                />
-              </div>
-            )}
           {!isUser && subAgents.length > 0 && (
             <div className="flex w-fit max-w-full flex-col gap-4">
               {subAgents.map((subAgent) => (
@@ -255,16 +161,6 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                         onClick={() => toggleSubAgent(subAgent.id)}
                         isExpanded={isSubAgentExpanded(subAgent.id)}
                       />
-                    </div>
-                    <div className="relative h-full min-h-[40px] w-[72px] flex-shrink-0">
-                      {debugMode && subAgent.status === "completed" && (
-                        <button
-                          onClick={() => onRestartFromSubTask(subAgent.id)}
-                          className="absolute bottom-1 right-1 -scale-x-100 rounded-full bg-black/10 p-1 transition-colors duration-200 hover:bg-black/20"
-                        >
-                          <RotateCcw className="h-3 w-3 text-gray-600" />
-                        </button>
-                      )}
                     </div>
                   </div>
                   {isSubAgentExpanded(subAgent.id) && (
