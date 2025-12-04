@@ -8,7 +8,6 @@ import {
   type Checkpoint,
 } from "@langchain/langgraph-sdk";
 import { v4 as uuidv4 } from "uuid";
-import type { UseStreamThread } from "@langchain/langgraph-sdk/react";
 import type { TodoItem } from "@/app/types/types";
 import { useClient } from "@/providers/ClientProvider";
 import { useQueryState } from "nuqs";
@@ -28,11 +27,9 @@ export type StateType = {
 export function useChat({
   activeAssistant,
   onHistoryRevalidate,
-  thread,
 }: {
   activeAssistant: Assistant | null;
   onHistoryRevalidate?: () => void;
-  thread?: UseStreamThread<StateType>;
 }) {
   const [threadId, setThreadId] = useQueryState("threadId");
   const client = useClient();
@@ -48,7 +45,6 @@ export function useChat({
     onFinish: onHistoryRevalidate,
     onError: onHistoryRevalidate,
     onCreated: onHistoryRevalidate,
-    experimental_thread: thread,
   });
 
   const sendMessage = useCallback(
