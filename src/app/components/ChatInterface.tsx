@@ -6,64 +6,25 @@ import React, {
   useCallback,
   useMemo,
   FormEvent,
-  Fragment,
 } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Square,
-  ArrowUp,
-  CheckCircle,
-  Clock,
-  Circle,
-  FileIcon,
-} from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 import { ChatMessage } from "@/app/components/ChatMessage";
 import type {
-  TodoItem,
   ToolCall,
   ActionRequest,
   ReviewConfig,
 } from "@/app/types/types";
-import { Assistant, Message } from "@langchain/langgraph-sdk";
+import type { Assistant, Message } from "@langchain/langgraph-sdk";
 import { extractStringFromMessageContent } from "@/app/utils/utils";
 import { useChatContext } from "@/providers/ChatProvider";
 import { cn } from "@/lib/utils";
 import { useStickToBottom } from "use-stick-to-bottom";
-import { FilesPopover } from "@/app/components/TasksFilesSidebar";
 
 interface ChatInterfaceProps {
   assistant: Assistant | null;
 }
 
-const getStatusIcon = (status: TodoItem["status"], className?: string) => {
-  switch (status) {
-    case "completed":
-      return (
-        <CheckCircle
-          size={16}
-          className={cn("text-success/80", className)}
-        />
-      );
-    case "in_progress":
-      return (
-        <Clock
-          size={16}
-          className={cn("text-warning/80", className)}
-        />
-      );
-    default:
-      return (
-        <Circle
-          size={16}
-          className={cn("text-tertiary/70", className)}
-        />
-      );
-  }
-};
-
 export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
-  const [metaOpen, setMetaOpen] = useState<"tasks" | "files" | null>(null);
-  const tasksContainerRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [input, setInput] = useState("");
@@ -72,10 +33,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
   const {
     stream,
     messages,
-    todos,
-    files,
     ui,
-    setFiles,
     isLoading,
     isThreadLoading,
     interrupt,
@@ -215,15 +173,6 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
     });
   }, [messages, interrupt]);
 
-  const groupedTodos = {
-    in_progress: todos.filter((t) => t.status === "in_progress"),
-    pending: todos.filter((t) => t.status === "pending"),
-    completed: todos.filter((t) => t.status === "completed"),
-  };
-
-  const hasTasks = todos.length > 0;
-  const hasFiles = Object.keys(files).length > 0;
-
   // Parse out any action requests or review configs from the interrupt
   const actionRequestsMap: Map<string, ActionRequest> | null = useMemo(() => {
     const actionRequests =
@@ -242,21 +191,46 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
   }, [interrupt]);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden bg-white">
+      {/* Messages Area - Scrollable */}
       <div
-        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
+        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
         ref={scrollRef}
       >
         <div
-          className="mx-auto w-full max-w-[1024px] px-6 pb-6 pt-4"
+          className="mx-auto w-full max-w-[1000px] px-6 py-4"
           ref={contentRef}
         >
           {isThreadLoading ? (
             <div className="flex items-center justify-center p-8">
-              <p className="text-muted-foreground">Loading...</p>
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-teal-500"></div>
+                <p className="text-sm text-gray-400">Loading conversation...</p>
+              </div>
+            </div>
+          ) : processedMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-teal-600">
+                <svg
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <h3 className="mb-2 text-lg font-medium text-gray-700">Start a conversation</h3>
+              <p className="text-center text-sm text-gray-400">
+                Type a message below to begin chatting with the AI assistant.
+              </p>
             </div>
           ) : (
-            <>
+            <div className="divide-y divide-gray-100">
               {processedMessages.map((data, index) => {
                 const messageUi = ui?.filter(
                   (u: any) => u.metadata?.message_id === data.message.id
@@ -281,228 +255,17 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
                   />
                 );
               })}
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="flex-shrink-0 bg-background">
-        <div
-          className={cn(
-            "mx-4 mb-6 flex flex-shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-background",
-            "mx-auto w-[calc(100%-32px)] max-w-[1024px] transition-colors duration-200 ease-in-out"
-          )}
-        >
-          {(hasTasks || hasFiles) && (
-            <div className="flex max-h-72 flex-col overflow-y-auto border-b border-border bg-sidebar empty:hidden">
-              {!metaOpen && (
-                <>
-                  {(() => {
-                    const activeTask = todos.find(
-                      (t) => t.status === "in_progress"
-                    );
-
-                    const totalTasks = todos.length;
-                    const remainingTasks =
-                      totalTasks - groupedTodos.pending.length;
-                    const isCompleted = totalTasks === remainingTasks;
-
-                    const tasksTrigger = (() => {
-                      if (!hasTasks) return null;
-                      return (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setMetaOpen((prev) =>
-                              prev === "tasks" ? null : "tasks"
-                            )
-                          }
-                          className="grid w-full cursor-pointer grid-cols-[auto_auto_1fr] items-center gap-3 px-[18px] py-3 text-left"
-                          aria-expanded={metaOpen === "tasks"}
-                        >
-                          {(() => {
-                            if (isCompleted) {
-                              return [
-                                <CheckCircle
-                                  key="icon"
-                                  size={16}
-                                  className="text-success/80"
-                                />,
-                                <span
-                                  key="label"
-                                  className="ml-[1px] min-w-0 truncate text-sm"
-                                >
-                                  All tasks completed
-                                </span>,
-                              ];
-                            }
-
-                            if (activeTask != null) {
-                              return [
-                                <div key="icon">
-                                  {getStatusIcon(activeTask.status)}
-                                </div>,
-                                <span
-                                  key="label"
-                                  className="ml-[1px] min-w-0 truncate text-sm"
-                                >
-                                  Task{" "}
-                                  {totalTasks - groupedTodos.pending.length} of{" "}
-                                  {totalTasks}
-                                </span>,
-                                <span
-                                  key="content"
-                                  className="min-w-0 gap-2 truncate text-sm text-muted-foreground"
-                                >
-                                  {activeTask.content}
-                                </span>,
-                              ];
-                            }
-
-                            return [
-                              <Circle
-                                key="icon"
-                                size={16}
-                                className="text-tertiary/70"
-                              />,
-                              <span
-                                key="label"
-                                className="ml-[1px] min-w-0 truncate text-sm"
-                              >
-                                Task {totalTasks - groupedTodos.pending.length}{" "}
-                                of {totalTasks}
-                              </span>,
-                            ];
-                          })()}
-                        </button>
-                      );
-                    })();
-
-                    const filesTrigger = (() => {
-                      if (!hasFiles) return null;
-                      return (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setMetaOpen((prev) =>
-                              prev === "files" ? null : "files"
-                            )
-                          }
-                          className="flex flex-shrink-0 cursor-pointer items-center gap-2 px-[18px] py-3 text-left text-sm"
-                          aria-expanded={metaOpen === "files"}
-                        >
-                          <FileIcon size={16} />
-                          Files (State)
-                          <span className="h-4 min-w-4 rounded-full bg-[#2F6868] px-0.5 text-center text-[10px] leading-[16px] text-white">
-                            {Object.keys(files).length}
-                          </span>
-                        </button>
-                      );
-                    })();
-
-                    return (
-                      <div className="grid grid-cols-[1fr_auto_auto] items-center">
-                        {tasksTrigger}
-                        {filesTrigger}
-                      </div>
-                    );
-                  })()}
-                </>
-              )}
-
-              {metaOpen && (
-                <>
-                  <div className="sticky top-0 flex items-stretch bg-sidebar text-sm">
-                    {hasTasks && (
-                      <button
-                        type="button"
-                        className="py-3 pr-4 first:pl-[18px] aria-expanded:font-semibold"
-                        onClick={() =>
-                          setMetaOpen((prev) =>
-                            prev === "tasks" ? null : "tasks"
-                          )
-                        }
-                        aria-expanded={metaOpen === "tasks"}
-                      >
-                        Tasks
-                      </button>
-                    )}
-                    {hasFiles && (
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-2 py-3 pr-4 first:pl-[18px] aria-expanded:font-semibold"
-                        onClick={() =>
-                          setMetaOpen((prev) =>
-                            prev === "files" ? null : "files"
-                          )
-                        }
-                        aria-expanded={metaOpen === "files"}
-                      >
-                        Files (State)
-                        <span className="h-4 min-w-4 rounded-full bg-[#2F6868] px-0.5 text-center text-[10px] leading-[16px] text-white">
-                          {Object.keys(files).length}
-                        </span>
-                      </button>
-                    )}
-                    <button
-                      aria-label="Close"
-                      className="flex-1"
-                      onClick={() => setMetaOpen(null)}
-                    />
-                  </div>
-                  <div
-                    ref={tasksContainerRef}
-                    className="px-[18px]"
-                  >
-                    {metaOpen === "tasks" &&
-                      Object.entries(groupedTodos)
-                        .filter(([_, todos]) => todos.length > 0)
-                        .map(([status, todos]) => (
-                          <div
-                            key={status}
-                            className="mb-4"
-                          >
-                            <h3 className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-tertiary">
-                              {
-                                {
-                                  pending: "Pending",
-                                  in_progress: "In Progress",
-                                  completed: "Completed",
-                                }[status]
-                              }
-                            </h3>
-                            <div className="grid grid-cols-[auto_1fr] gap-3 rounded-sm p-1 pl-0 text-sm">
-                              {todos.map((todo, index) => (
-                                <Fragment key={`${status}_${todo.id}_${index}`}>
-                                  {getStatusIcon(todo.status, "mt-0.5")}
-                                  <span className="break-words text-inherit">
-                                    {todo.content}
-                                  </span>
-                                </Fragment>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-
-                    {metaOpen === "files" && (
-                      <div className="mb-6">
-                        <FilesPopover
-                          files={files}
-                          setFiles={setFiles}
-                          editDisabled={
-                            isLoading === true || interrupt !== undefined
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+      {/* Input Area - Fixed at Bottom with proper spacing */}
+      <div className="flex-shrink-0 border-t border-gray-200 bg-white p-4">
+        <div className="mx-auto max-w-[1000px]">
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col"
+            className="flex flex-col rounded-2xl border border-gray-200 bg-white shadow-sm"
           >
             <textarea
               ref={textareaRef}
@@ -510,30 +273,61 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isLoading ? "Running..." : "Write your message..."}
-              className="font-inherit field-sizing-content flex-1 resize-none border-0 bg-transparent px-[18px] pb-[13px] pt-[14px] text-sm leading-7 text-primary outline-none placeholder:text-tertiary"
-              rows={1}
+              className="min-h-[80px] flex-1 resize-none border-0 bg-transparent px-4 py-3.5 text-sm leading-relaxed text-gray-700 outline-none placeholder:text-gray-400"
+              rows={3}
             />
-            <div className="flex justify-between gap-2 p-3">
-              <div className="flex justify-end gap-2">
-                <Button
+            <div className="flex items-center justify-between px-3 pb-2.5">
+              {/* Quick Actions */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                >
+                  Define Worthy Criteria
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                >
+                  Research User Queries
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                >
+                  Keyword Research Tools
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md px-2 py-1 text-xs text-gray-500 transition-colors hover:text-teal-600"
+                >
+                  more →
+                </button>
+              </div>
+              {/* Send Button */}
+              <button
                   type={isLoading ? "button" : "submit"}
-                  variant={isLoading ? "destructive" : "default"}
-                  onClick={isLoading ? stopStream : handleSubmit}
+                onClick={isLoading ? stopStream : undefined}
                   disabled={!isLoading && (submitDisabled || !input.trim())}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+                  isLoading
+                    ? "bg-red-500 text-white shadow-sm hover:bg-red-600"
+                    : "bg-teal-600 text-white shadow-sm hover:bg-teal-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+                )}
                 >
                   {isLoading ? (
                     <>
                       <Square size={14} />
-                      <span>Stop</span>
+                    Stop
                     </>
                   ) : (
                     <>
-                      <ArrowUp size={18} />
-                      <span>Send</span>
+                    <ArrowUp size={16} />
+                    Send
                     </>
                   )}
-                </Button>
-              </div>
+              </button>
             </div>
           </form>
         </div>

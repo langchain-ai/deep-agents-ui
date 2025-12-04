@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useCallback } from "react";
+import { Bot, User } from "lucide-react";
 import { SubAgentIndicator } from "@/app/components/SubAgentIndicator";
 import { ToolCallBox } from "@/app/components/ToolCallBox";
 import { MarkdownContent } from "@/app/components/MarkdownContent";
@@ -87,30 +88,47 @@ export const ChatMessage = React.memo<ChatMessageProps>(
     return (
       <div
         className={cn(
-          "flex w-full max-w-full overflow-x-hidden",
-          isUser && "flex-row-reverse"
+          "flex w-full max-w-full gap-3 overflow-x-hidden py-3",
+          isUser ? "flex-row-reverse" : "flex-row"
         )}
       >
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          <div
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-full",
+              isUser ? "bg-gray-800" : "bg-gradient-to-br from-teal-400 to-teal-600"
+            )}
+          >
+            {isUser ? (
+              <User size={16} className="text-white" />
+            ) : (
+              <Bot size={16} className="text-white" />
+            )}
+          </div>
+        </div>
+
+        {/* Message Content */}
         <div
           className={cn(
-            "min-w-0 max-w-full",
-            isUser ? "max-w-[70%]" : "w-full"
+            "min-w-0 flex-1",
+            isUser ? "max-w-[70%]" : "max-w-full"
           )}
         >
+          {/* Role Label */}
+          <div className={cn("mb-1 text-xs font-medium", isUser ? "text-right text-gray-500" : "text-gray-500")}>
+            {isUser ? "You" : "Assistant"}
+          </div>
+
           {hasContent && (
-            <div className={cn("relative flex items-end gap-0")}>
+            <div className={cn("relative flex", isUser ? "justify-end" : "justify-start")}>
               <div
                 className={cn(
-                  "mt-4 overflow-hidden break-words text-sm font-normal leading-[150%]",
+                  "overflow-hidden break-words text-sm font-normal leading-[160%]",
                   isUser
-                    ? "rounded-xl rounded-br-none border border-border px-3 py-2 text-foreground"
-                    : "text-primary"
+                    ? "rounded-2xl rounded-tr-sm bg-gray-800 px-4 py-3 text-white"
+                    : "rounded-2xl rounded-tl-sm bg-gray-50 px-4 py-3"
                 )}
-                style={
-                  isUser
-                    ? { backgroundColor: "var(--color-user-message-bg)" }
-                    : undefined
-                }
               >
                 {isUser ? (
                   <p className="m-0 whitespace-pre-wrap break-words text-sm leading-relaxed">
@@ -122,8 +140,10 @@ export const ChatMessage = React.memo<ChatMessageProps>(
               </div>
             </div>
           )}
+
+          {/* Tool Calls */}
           {hasToolCalls && (
-            <div className="mt-4 flex w-full flex-col">
+            <div className="mt-3 flex w-full flex-col gap-2">
               {toolCalls.map((toolCall: ToolCall) => {
                 if (toolCall.name === "task") return null;
                 const toolCallGenUiComponent = ui?.find(
@@ -147,44 +167,46 @@ export const ChatMessage = React.memo<ChatMessageProps>(
               })}
             </div>
           )}
+
+          {/* SubAgents */}
           {!isUser && subAgents.length > 0 && (
-            <div className="flex w-fit max-w-full flex-col gap-4">
+            <div className="mt-3 flex w-full max-w-full flex-col gap-2">
               {subAgents.map((subAgent) => (
                 <div
                   key={subAgent.id}
-                  className="flex w-full flex-col gap-2"
+                  className="flex w-full flex-col"
                 >
-                  <div className="flex items-end gap-2">
-                    <div className="w-[calc(100%-100px)]">
-                      <SubAgentIndicator
-                        subAgent={subAgent}
-                        onClick={() => toggleSubAgent(subAgent.id)}
-                        isExpanded={isSubAgentExpanded(subAgent.id)}
-                      />
-                    </div>
-                  </div>
+                  <SubAgentIndicator
+                    subAgent={subAgent}
+                    onClick={() => toggleSubAgent(subAgent.id)}
+                    isExpanded={isSubAgentExpanded(subAgent.id)}
+                  />
                   {isSubAgentExpanded(subAgent.id) && (
-                    <div className="w-full max-w-full">
-                      <div className="bg-surface border-border-light rounded-md border p-4">
-                        <h4 className="text-primary/70 mb-2 text-xs font-semibold uppercase tracking-wider">
-                          Input
+                    <div className="ml-4 mt-2 w-[calc(100%-1rem)] rounded-lg border-l-2 border-teal-400 bg-gray-50 p-4">
+                      <div className="mb-3">
+                        <h4 className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-teal-600">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-teal-400"></span>
+                          INPUT
                         </h4>
-                        <div className="mb-4">
+                        <div className="text-sm text-gray-700">
                           <MarkdownContent
                             content={extractSubAgentContent(subAgent.input)}
                           />
                         </div>
-                        {subAgent.output && (
-                          <>
-                            <h4 className="text-primary/70 mb-2 text-xs font-semibold uppercase tracking-wider">
-                              Output
-                            </h4>
+                      </div>
+                      {subAgent.output && (
+                        <div className="border-t border-gray-200 pt-3">
+                          <h4 className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                            OUTPUT
+                          </h4>
+                          <div className="text-sm text-gray-700">
                             <MarkdownContent
                               content={extractSubAgentContent(subAgent.output)}
                             />
-                          </>
-                        )}
-                      </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -17,7 +17,16 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
     return (
       <div
         className={cn(
-          "prose min-w-0 max-w-full overflow-hidden break-words text-sm leading-relaxed text-inherit [&_h1:first-child]:mt-0 [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:font-semibold [&_h2:first-child]:mt-0 [&_h2]:mb-4 [&_h2]:mt-6 [&_h2]:font-semibold [&_h3:first-child]:mt-0 [&_h3]:mb-4 [&_h3]:mt-6 [&_h3]:font-semibold [&_h4:first-child]:mt-0 [&_h4]:mb-4 [&_h4]:mt-6 [&_h4]:font-semibold [&_h5:first-child]:mt-0 [&_h5]:mb-4 [&_h5]:mt-6 [&_h5]:font-semibold [&_h6:first-child]:mt-0 [&_h6]:mb-4 [&_h6]:mt-6 [&_h6]:font-semibold [&_p:last-child]:mb-0 [&_p]:mb-4",
+          "prose min-w-0 max-w-full overflow-hidden break-words text-sm leading-relaxed text-gray-600",
+          "[&_h1:first-child]:mt-0 [&_h1]:mb-3 [&_h1]:mt-5 [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:text-blue-600",
+          "[&_h2:first-child]:mt-0 [&_h2]:mb-3 [&_h2]:mt-5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-blue-600",
+          "[&_h3:first-child]:mt-0 [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-blue-500",
+          "[&_h4:first-child]:mt-0 [&_h4]:mb-2 [&_h4]:mt-4 [&_h4]:text-sm [&_h4]:font-medium [&_h4]:text-gray-700",
+          "[&_h5:first-child]:mt-0 [&_h5]:mb-2 [&_h5]:mt-3 [&_h5]:text-sm [&_h5]:font-medium [&_h5]:text-gray-700",
+          "[&_h6:first-child]:mt-0 [&_h6]:mb-2 [&_h6]:mt-3 [&_h6]:text-sm [&_h6]:font-medium [&_h6]:text-gray-600",
+          "[&_p:last-child]:mb-0 [&_p]:mb-3 [&_p]:text-gray-600",
+          "[&_strong]:font-semibold [&_strong]:text-gray-700",
+          "[&_li]:text-gray-600",
           className
         )}
       >
@@ -61,7 +70,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 </SyntaxHighlighter>
               ) : (
                 <code
-                  className="bg-surface rounded-sm px-1 py-0.5 font-mono text-[0.9em]"
+                  className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[0.85em] text-gray-700"
                   {...props}
                 >
                   {children}
@@ -87,7 +96,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary no-underline hover:underline"
+                  className="text-blue-500 no-underline hover:underline"
                 >
                   {children}
                 </a>
@@ -95,21 +104,21 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
             },
             blockquote({ children }: { children?: React.ReactNode }) {
               return (
-                <blockquote className="text-primary/50 my-4 border-l-4 border-border pl-4 italic">
+                <blockquote className="my-4 border-l-4 border-blue-200 pl-4 italic text-gray-500">
                   {children}
                 </blockquote>
               );
             },
             ul({ children }: { children?: React.ReactNode }) {
               return (
-                <ul className="my-4 pl-6 [&>li:last-child]:mb-0 [&>li]:mb-1">
+                <ul className="my-3 list-disc pl-6 [&>li:last-child]:mb-0 [&>li]:mb-1">
                   {children}
                 </ul>
               );
             },
             ol({ children }: { children?: React.ReactNode }) {
               return (
-                <ol className="my-4 pl-6 [&>li:last-child]:mb-0 [&>li]:mb-1">
+                <ol className="my-3 list-decimal pl-6 [&>li:last-child]:mb-0 [&>li]:mb-1">
                   {children}
                 </ol>
               );
@@ -117,7 +126,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
             table({ children }: { children?: React.ReactNode }) {
               return (
                 <div className="my-4 overflow-x-auto">
-                  <table className="[&_th]:bg-surface w-full border-collapse [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:text-left [&_th]:font-semibold">
+                  <table className="w-full border-collapse [&_td]:border [&_td]:border-gray-200 [&_td]:p-2 [&_td]:text-gray-600 [&_th]:border [&_th]:border-gray-200 [&_th]:bg-gray-50 [&_th]:p-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-gray-700">
                     {children}
                   </table>
                 </div>

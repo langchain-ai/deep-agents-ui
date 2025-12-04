@@ -57,19 +57,19 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
     const statusIcon = useMemo(() => {
       switch (status) {
         case "completed":
-          return <CircleCheckBigIcon />;
+          return <CircleCheckBigIcon size={14} className="text-emerald-500" />;
         case "error":
           return (
             <AlertCircle
               size={14}
-              className="text-destructive"
+              className="text-red-500"
             />
           );
         case "pending":
           return (
             <Loader2
               size={14}
-              className="animate-spin"
+              className="animate-spin text-blue-500"
             />
           );
         case "interrupted":
@@ -83,7 +83,7 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
           return (
             <Terminal
               size={14}
-              className="text-muted-foreground"
+              className="text-gray-400"
             />
           );
       }
@@ -102,11 +102,28 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
 
     const hasContent = result || Object.keys(args).length > 0;
 
+    // Get status color for border accent
+    const statusColor = useMemo(() => {
+      switch (status) {
+        case "completed":
+          return "border-l-emerald-400";
+        case "error":
+          return "border-l-red-400";
+        case "pending":
+          return "border-l-blue-400";
+        case "interrupted":
+          return "border-l-orange-400";
+        default:
+          return "border-l-gray-300";
+      }
+    }, [status]);
+
     return (
       <div
         className={cn(
-          "w-full overflow-hidden rounded-lg border-none shadow-none outline-none transition-colors duration-200 hover:bg-accent",
-          isExpanded && hasContent && "bg-accent"
+          "w-full overflow-hidden rounded-lg border border-gray-200 border-l-[3px] transition-all duration-200",
+          statusColor,
+          isExpanded && hasContent ? "bg-white shadow-sm" : "bg-gray-50 hover:bg-gray-100"
         )}
       >
         <Button
@@ -114,34 +131,43 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
           size="sm"
           onClick={toggleExpanded}
           className={cn(
-            "flex w-full items-center justify-between gap-2 border-none px-2 py-2 text-left shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-default"
+            "flex w-full items-center justify-between gap-2 border-none px-3 py-2.5 text-left shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-default hover:bg-transparent"
           )}
           disabled={!hasContent}
         >
           <div className="flex w-full items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               {statusIcon}
-              <span className="text-[15px] font-medium tracking-[-0.6px] text-foreground">
+              <span className="text-sm font-medium text-gray-700">
                 {name}
               </span>
+              {status === "pending" && (
+                <span className="text-xs text-blue-500">Running...</span>
+              )}
+              {status === "completed" && (
+                <span className="text-xs text-emerald-500">Done</span>
+              )}
+              {status === "error" && (
+                <span className="text-xs text-red-500">Error</span>
+              )}
             </div>
             {hasContent &&
               (isExpanded ? (
                 <ChevronUp
                   size={14}
-                  className="shrink-0 text-muted-foreground"
+                  className="shrink-0 text-gray-400"
                 />
               ) : (
                 <ChevronDown
                   size={14}
-                  className="shrink-0 text-muted-foreground"
+                  className="shrink-0 text-gray-400"
                 />
               ))}
           </div>
         </Button>
 
         {isExpanded && hasContent && (
-          <div className="px-4 pb-4">
+          <div className="border-t border-gray-100 px-4 pb-4">
             {uiComponent && stream && graphId ? (
               <div className="mt-4">
                 <LoadExternalComponent
@@ -153,7 +179,6 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
                 />
               </div>
             ) : actionRequest && onResume ? (
-              // Show tool approval UI when there's an action request but no GenUI
               <div className="mt-4">
                 <ToolApprovalInterrupt
                   actionRequest={actionRequest}
@@ -166,39 +191,40 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
               <>
                 {Object.keys(args).length > 0 && (
                   <div className="mt-4">
-                    <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <h4 className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-gray-400"></span>
                       Arguments
                     </h4>
                     <div className="space-y-2">
                       {Object.entries(args).map(([key, value]) => (
                         <div
                           key={key}
-                          className="rounded-sm border border-border"
+                          className="overflow-hidden rounded-md border border-gray-200"
                         >
                           <button
                             onClick={() => toggleArgExpanded(key)}
-                            className="flex w-full items-center justify-between bg-muted/30 p-2 text-left text-xs font-medium transition-colors hover:bg-muted/50"
+                            className="flex w-full items-center justify-between bg-gray-50 p-2.5 text-left text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100"
                           >
-                            <span className="font-mono">{key}</span>
+                            <span className="font-mono text-blue-600">{key}</span>
                             {expandedArgs[key] ? (
                               <ChevronUp
                                 size={12}
-                                className="text-muted-foreground"
+                                className="text-gray-400"
                               />
                             ) : (
                               <ChevronDown
                                 size={12}
-                                className="text-muted-foreground"
+                                className="text-gray-400"
                               />
                             )}
                           </button>
                           {expandedArgs[key] && (
-                            <div className="border-t border-border bg-muted/20 p-2">
-                              <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground">
+                            <div className="border-t border-gray-200 bg-white p-3">
+                              <div className="m-0 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs leading-relaxed text-gray-700">
                                 {typeof value === "string"
                                   ? value
                                   : JSON.stringify(value, null, 2)}
-                              </pre>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -208,14 +234,17 @@ export const ToolCallBox = React.memo<ToolCallBoxProps>(
                 )}
                 {result && (
                   <div className="mt-4">
-                    <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <h4 className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
                       Result
                     </h4>
-                    <pre className="m-0 overflow-x-auto whitespace-pre-wrap break-all rounded-sm border border-border bg-muted/40 p-2 font-mono text-xs leading-7 text-foreground">
-                      {typeof result === "string"
-                        ? result
-                        : JSON.stringify(result, null, 2)}
-                    </pre>
+                    <div className="max-h-[300px] overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-3">
+                      <div className="m-0 whitespace-pre-wrap break-all font-mono text-xs leading-relaxed text-gray-700">
+                        {typeof result === "string"
+                          ? result
+                          : JSON.stringify(result, null, 2)}
+                      </div>
+                    </div>
                   </div>
                 )}
               </>
