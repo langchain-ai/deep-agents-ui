@@ -130,7 +130,7 @@ function HomePageInner({
   const [showAllChats, setShowAllChats] = useState(false);
 
   const [mutateThreads, setMutateThreads] = useState<(() => void) | null>(null);
-  const [interruptCount, setInterruptCount] = useState(0);
+  const [_interruptCount, setInterruptCount] = useState(0);
   const [assistant, setAssistant] = useState<Assistant | null>(null);
 
   const fetchAssistant = useCallback(async () => {
