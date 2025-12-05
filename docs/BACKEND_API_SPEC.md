@@ -640,7 +640,7 @@ Authorization: Bearer <token>
 
 #### GET /api/models
 
-获取可用模型列表。
+获取可用模型列表（按提供商分组）。
 
 **请求头:**
 ```
@@ -652,30 +652,98 @@ Authorization: Bearer <token>
 {
   "models": [
     {
-      "id": "gpt-4",
-      "name": "GPT-4",
+      "id": "gpt-4o",
+      "name": "GPT-4o",
       "provider": "OpenAI",
-      "description": "Most capable GPT-4 model"
+      "description": "Most capable GPT-4 model with vision",
+      "contextWindow": 128000,
+      "maxTokens": 4096
     },
     {
       "id": "gpt-4-turbo",
       "name": "GPT-4 Turbo",
       "provider": "OpenAI",
-      "description": "Faster GPT-4 model with 128k context"
+      "description": "Faster GPT-4 model with 128k context",
+      "contextWindow": 128000,
+      "maxTokens": 4096
+    },
+    {
+      "id": "gpt-4",
+      "name": "GPT-4",
+      "provider": "OpenAI",
+      "description": "Original GPT-4 model",
+      "contextWindow": 8192,
+      "maxTokens": 4096
+    },
+    {
+      "id": "gpt-3.5-turbo",
+      "name": "GPT-3.5 Turbo",
+      "provider": "OpenAI",
+      "description": "Fast and cost-effective",
+      "contextWindow": 16385,
+      "maxTokens": 4096
     },
     {
       "id": "claude-3-opus",
       "name": "Claude 3 Opus",
       "provider": "Anthropic",
-      "description": "Most capable Claude model"
+      "description": "Most capable Claude model for complex tasks",
+      "contextWindow": 200000,
+      "maxTokens": 4096
+    },
+    {
+      "id": "claude-3-sonnet",
+      "name": "Claude 3 Sonnet",
+      "provider": "Anthropic",
+      "description": "Balanced performance and speed",
+      "contextWindow": 200000,
+      "maxTokens": 4096
+    },
+    {
+      "id": "claude-3-haiku",
+      "name": "Claude 3 Haiku",
+      "provider": "Anthropic",
+      "description": "Fastest Claude model",
+      "contextWindow": 200000,
+      "maxTokens": 4096
+    },
+    {
+      "id": "gemini-1.5-pro",
+      "name": "Gemini 1.5 Pro",
+      "provider": "Google",
+      "description": "Google's most capable model",
+      "contextWindow": 1000000,
+      "maxTokens": 8192
+    },
+    {
+      "id": "gemini-1.5-flash",
+      "name": "Gemini 1.5 Flash",
+      "provider": "Google",
+      "description": "Fast and efficient Gemini model",
+      "contextWindow": 1000000,
+      "maxTokens": 8192
     }
   ]
 }
 ```
 
+**TypeScript 类型:**
+```typescript
+interface ModelOption {
+  id: string;
+  name: string;
+  provider: string;
+  description?: string;
+  contextWindow?: number;  // 上下文窗口大小
+  maxTokens?: number;      // 最大输出 token 数
+}
+```
+
+---
+
 #### GET /api/tools
 
-获取可用工具列表。
+获取可用工具列表（按分类分组）。
 
 **请求头:**
 ```
@@ -689,22 +757,92 @@ Authorization: Bearer <token>
     {
       "id": "web_search",
       "name": "Web Search",
-      "description": "Search the web for information",
+      "category": "Search",
+      "description": "Search the web for real-time information",
+      "enabled": true
+    },
+    {
+      "id": "arxiv_search",
+      "name": "ArXiv Search",
+      "category": "Search",
+      "description": "Search academic papers on ArXiv",
       "enabled": true
     },
     {
       "id": "code_interpreter",
       "name": "Code Interpreter",
-      "description": "Execute Python code",
+      "category": "Code",
+      "description": "Execute Python code in a sandboxed environment",
       "enabled": true
     },
     {
-      "id": "file_browser",
-      "name": "File Browser",
-      "description": "Browse and manage files",
+      "id": "code_analyzer",
+      "name": "Code Analyzer",
+      "category": "Code",
+      "description": "Analyze and review code for issues",
+      "enabled": true
+    },
+    {
+      "id": "file_reader",
+      "name": "File Reader",
+      "category": "File",
+      "description": "Read and parse various file formats",
+      "enabled": true
+    },
+    {
+      "id": "file_writer",
+      "name": "File Writer",
+      "category": "File",
+      "description": "Create and modify files",
+      "enabled": true
+    },
+    {
+      "id": "image_generator",
+      "name": "Image Generator",
+      "category": "Image",
+      "description": "Generate images using AI models",
+      "enabled": false
+    },
+    {
+      "id": "image_analyzer",
+      "name": "Image Analyzer",
+      "category": "Image",
+      "description": "Analyze and describe images",
+      "enabled": true
+    },
+    {
+      "id": "database_query",
+      "name": "Database Query",
+      "category": "Database",
+      "description": "Execute SQL queries on connected databases",
+      "enabled": false
+    },
+    {
+      "id": "api_caller",
+      "name": "API Caller",
+      "category": "Web",
+      "description": "Make HTTP requests to external APIs",
+      "enabled": true
+    },
+    {
+      "id": "terminal",
+      "name": "Terminal",
+      "category": "Terminal",
+      "description": "Execute shell commands",
       "enabled": false
     }
   ]
+}
+```
+
+**TypeScript 类型:**
+```typescript
+interface ToolOption {
+  id: string;
+  name: string;
+  category?: string;    // 工具分类：Search, Code, File, Image, Database, Web, Terminal, General
+  description?: string;
+  enabled: boolean;     // 是否默认启用
 }
 ```
 

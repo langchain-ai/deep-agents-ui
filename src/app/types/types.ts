@@ -19,13 +19,26 @@ export interface ModelOption {
   name: string;
   provider: string;
   description?: string;
+  contextWindow?: number;
+  maxTokens?: number;
 }
 
 export interface ToolOption {
   id: string;
   name: string;
   description?: string;
+  category?: string;  // 工具分类
   enabled: boolean;
+}
+
+// 模型按提供商分组
+export interface ModelsByProvider {
+  [provider: string]: ModelOption[];
+}
+
+// 工具按分类分组
+export interface ToolsByCategory {
+  [category: string]: ToolOption[];
 }
 
 // ============ 会话相关 ============
