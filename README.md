@@ -7,8 +7,8 @@
 **Install dependencies and run the app**
 
 ```bash
-$ git clone https://github.com/langchain-ai/deepagents-ui.git
-$ cd deepagents-ui
+$ git clone https://github.com/langchain-ai/deep-agents-ui.git
+$ cd deep-agents-ui
 $ yarn install
 $ yarn dev
 ```
