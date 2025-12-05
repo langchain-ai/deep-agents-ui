@@ -3,7 +3,25 @@
  * 用于与 DeepAgents 后端进行 REST API 通信
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// 环境变量配置
+// 开发环境: http://localhost:8000
+// 生产环境: 通过 NEXT_PUBLIC_API_URL 配置
+const getApiBaseUrl = (): string => {
+  // 优先使用环境变量
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // 开发环境默认值
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000';
+  }
+  
+  // 生产环境默认值（可以根据实际情况修改）
+  return 'http://localhost:8000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
@@ -20,6 +38,20 @@ class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+  }
+
+  /**
+   * 获取当前 API 基础 URL
+   */
+  getBaseUrl(): string {
+    return this.baseUrl;
+  }
+
+  /**
+   * 动态设置 API 基础 URL
+   */
+  setBaseUrl(url: string) {
+    this.baseUrl = url;
   }
 
   /**
@@ -70,14 +102,14 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      let errorData: { message?: string; code?: string } = { message: 'Request failed' };
+      let errorData: { message?: string; code?: string; detail?: string } = { message: 'Request failed' };
       try {
         errorData = await response.json();
       } catch {
         // 忽略 JSON 解析错误
       }
 
-      const error: ApiError = new Error(errorData.message || `HTTP ${response.status}`);
+      const error: ApiError = new Error(errorData.message || errorData.detail || `HTTP ${response.status}`);
       error.code = errorData.code;
       error.status = response.status;
       throw error;
@@ -139,6 +171,5 @@ class ApiClient {
 // 导出单例实例
 export const apiClient = new ApiClient(API_BASE_URL);
 export default apiClient;
-export { ApiClient };
+export { ApiClient, API_BASE_URL };
 export type { ApiError };
-

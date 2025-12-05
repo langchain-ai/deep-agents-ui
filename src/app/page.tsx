@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { Sun, SquarePen, Copy, MessageCircle, LogOut, User } from "lucide-react";
 import { ChatProvider, useChatContext } from "@/providers/ChatProvider";
-import { AuthProvider, useAuth } from "@/providers/AuthProvider";
+import { useAuth } from "@/providers/AuthProvider";
 import { ChatInterface } from "@/app/components/ChatInterface";
 import { LeftSidebar } from "@/app/components/LeftSidebar";
 import { RightSidebar } from "@/app/components/RightSidebar";
@@ -103,7 +103,7 @@ function MainContent({
 // ============ 认证后的主页 ============
 function AuthenticatedHome() {
   const router = useRouter();
-  const { user, logout, isLoading: authLoading } = useAuth();
+  const { user, logout } = useAuth();
   const [showAllChats, setShowAllChats] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mutateConversations, setMutateConversations] = useState<(() => void) | null>(null);
@@ -212,11 +212,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 // ============ 主页内容 ============
 function HomePageContent() {
   return (
-    <AuthProvider>
-      <AuthGuard>
-        <AuthenticatedHome />
-      </AuthGuard>
-    </AuthProvider>
+    <AuthGuard>
+      <AuthenticatedHome />
+    </AuthGuard>
   );
 }
 
