@@ -1,4 +1,3 @@
-import { Message } from "@langchain/langgraph-sdk";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -6,7 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function extractStringFromMessageContent(message: Message): string {
+// 通用消息类型（兼容 LangGraph 和自定义格式）
+type MessageLike = {
+  id?: string;
+  type?: string;
+  role?: string;
+  content: string | unknown[];
+  tool_calls?: Array<{
+    id?: string;
+    name?: string;
+    args?: Record<string, unknown>;
+  }>;
+  additional_kwargs?: Record<string, unknown>;
+  tool_call_id?: string;
+  name?: string;
+};
+
+export function extractStringFromMessageContent(message: MessageLike): string {
   return typeof message.content === "string"
     ? message.content
     : Array.isArray(message.content)
@@ -61,27 +76,31 @@ export function extractSubAgentContent(data: unknown): string {
   return JSON.stringify(data, null, 2);
 }
 
-export function isPreparingToCallTaskTool(messages: Message[]): boolean {
+export function isPreparingToCallTaskTool(messages: MessageLike[]): boolean {
   const lastMessage = messages[messages.length - 1];
+  if (!lastMessage) return false;
+  
+  const messageType = lastMessage.type || lastMessage.role;
   return (
-    (lastMessage.type === "ai" &&
-      lastMessage.tool_calls?.some(
-        (call: { name?: string }) => call.name === "task"
-      )) ||
-    false
+    (messageType === "ai" || messageType === "assistant") &&
+    lastMessage.tool_calls?.some(
+      (call: { name?: string }) => call.name === "task"
+    ) || false
   );
 }
 
-export function formatMessageForLLM(message: Message): string {
+export function formatMessageForLLM(message: MessageLike): string {
+  const messageType = message.type || message.role;
   let role: string;
-  if (message.type === "human") {
+  
+  if (messageType === "human" || messageType === "user") {
     role = "Human";
-  } else if (message.type === "ai") {
+  } else if (messageType === "ai" || messageType === "assistant") {
     role = "Assistant";
-  } else if (message.type === "tool") {
+  } else if (messageType === "tool") {
     role = `Tool Result`;
   } else {
-    role = message.type || "Unknown";
+    role = messageType || "Unknown";
   }
 
   const timestamp = message.id ? ` (${message.id.slice(0, 8)})` : "";
@@ -94,11 +113,11 @@ export function formatMessageForLLM(message: Message): string {
   } else if (Array.isArray(message.content)) {
     const textParts: string[] = [];
 
-    message.content.forEach((part: any) => {
+    message.content.forEach((part: unknown) => {
       if (typeof part === "string") {
         textParts.push(part);
-      } else if (part && typeof part === "object" && part.type === "text") {
-        textParts.push(part.text || "");
+      } else if (part && typeof part === "object" && "type" in part && (part as { type: string }).type === "text") {
+        textParts.push((part as { text?: string }).text || "");
       }
       // Ignore other types like tool_use in content - we handle tool calls separately
     });
@@ -107,9 +126,9 @@ export function formatMessageForLLM(message: Message): string {
   }
 
   // For tool messages, include additional tool metadata
-  if (message.type === "tool") {
-    const toolName = (message as any).name || "unknown_tool";
-    const toolCallId = (message as any).tool_call_id || "";
+  if (messageType === "tool") {
+    const toolName = message.name || "unknown_tool";
+    const toolCallId = message.tool_call_id || "";
     role = `Tool Result [${toolName}]`;
     if (toolCallId) {
       role += ` (call_id: ${toolCallId.slice(0, 8)})`;
@@ -119,12 +138,12 @@ export function formatMessageForLLM(message: Message): string {
   // Handle tool calls from .tool_calls property (for AI messages)
   const toolCallsText: string[] = [];
   if (
-    message.type === "ai" &&
+    (messageType === "ai" || messageType === "assistant") &&
     message.tool_calls &&
     Array.isArray(message.tool_calls) &&
     message.tool_calls.length > 0
   ) {
-    message.tool_calls.forEach((call: any) => {
+    message.tool_calls.forEach((call) => {
       const toolName = call.name || "unknown_tool";
       const toolArgs = call.args ? JSON.stringify(call.args, null, 2) : "{}";
       toolCallsText.push(`[Tool Call: ${toolName}]\nArguments: ${toolArgs}`);
@@ -151,7 +170,7 @@ export function formatMessageForLLM(message: Message): string {
   return `${role}${timestamp}:\n${parts.join("\n\n")}`;
 }
 
-export function formatConversationForLLM(messages: Message[]): string {
+export function formatConversationForLLM(messages: MessageLike[]): string {
   const formattedMessages = messages.map(formatMessageForLLM);
   return formattedMessages.join("\n\n---\n\n");
 }

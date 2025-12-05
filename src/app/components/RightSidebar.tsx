@@ -6,10 +6,10 @@ import type { FileItem } from "@/app/types/types";
 import { FileViewDialog } from "@/app/components/FileViewDialog";
 
 interface RightSidebarProps {
-  files: Record<string, string>;
+  files: Record<string, string> | Record<string, FileItem>;
   setFiles: (files: Record<string, string>) => Promise<void>;
   isLoading: boolean;
-  interrupt: any;
+  interrupt: unknown;
 }
 
 type PlaybookType = "Research" | "Build" | "Optimize" | "Monitor";

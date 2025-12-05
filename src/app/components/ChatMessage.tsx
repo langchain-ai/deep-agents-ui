@@ -10,23 +10,38 @@ import type {
   ToolCall,
   ActionRequest,
   ReviewConfig,
+  Message,
 } from "@/app/types/types";
-import { Message } from "@langchain/langgraph-sdk";
 import {
   extractSubAgentContent,
   extractStringFromMessageContent,
 } from "@/app/utils/utils";
 import { cn } from "@/lib/utils";
 
+// 兼容 LangGraph 和自定义消息格式
+type MessageLike = Message | {
+  id?: string;
+  type?: string;
+  role?: string;
+  content: string | Array<{ type?: string; text?: string }>;
+  tool_calls?: Array<{
+    id?: string;
+    name?: string;
+    args?: Record<string, unknown>;
+  }>;
+  additional_kwargs?: Record<string, unknown>;
+  tool_call_id?: string;
+};
+
 interface ChatMessageProps {
-  message: Message;
+  message: MessageLike;
   toolCalls: ToolCall[];
   isLoading?: boolean;
   actionRequestsMap?: Map<string, ActionRequest>;
   reviewConfigsMap?: Map<string, ReviewConfig>;
-  ui?: any[];
-  stream?: any;
-  onResumeInterrupt?: (value: any) => void;
+  ui?: unknown[];
+  stream?: unknown;
+  onResumeInterrupt?: (value: unknown) => void;
   graphId?: string;
 }
 
@@ -42,7 +57,9 @@ export const ChatMessage = React.memo<ChatMessageProps>(
     onResumeInterrupt,
     graphId,
   }) => {
-    const isUser = message.type === "human";
+    // 兼容 type 和 role 两种格式
+    const messageType = (message as { type?: string }).type || (message as { role?: string }).role;
+    const isUser = messageType === "human" || messageType === "user";
     const messageContent = extractStringFromMessageContent(message);
     const hasContent = messageContent && messageContent.trim() !== "";
     const hasToolCalls = toolCalls.length > 0;
@@ -147,7 +164,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
               {toolCalls.map((toolCall: ToolCall) => {
                 if (toolCall.name === "task") return null;
                 const toolCallGenUiComponent = ui?.find(
-                  (u) => u.metadata?.tool_call_id === toolCall.id
+                  (u: unknown) => (u as { metadata?: { tool_call_id?: string } })?.metadata?.tool_call_id === toolCall.id
                 );
                 const actionRequest = actionRequestsMap?.get(toolCall.name);
                 const reviewConfig = reviewConfigsMap?.get(toolCall.name);

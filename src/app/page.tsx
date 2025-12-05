@@ -1,49 +1,28 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
-import { getConfig, saveConfig, StandaloneConfig } from "@/lib/config";
-import { ConfigDialog } from "@/app/components/ConfigDialog";
-import { Button } from "@/components/ui/button";
-import { Assistant } from "@langchain/langgraph-sdk";
-import { ClientProvider, useClient } from "@/providers/ClientProvider";
-import { Settings, Sun, SquarePen, Copy, MessageCircle } from "lucide-react";
-import { ThreadList } from "@/app/components/ThreadList";
+import { Sun, SquarePen, Copy, MessageCircle, LogOut, User } from "lucide-react";
 import { ChatProvider, useChatContext } from "@/providers/ChatProvider";
+import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 import { ChatInterface } from "@/app/components/ChatInterface";
 import { LeftSidebar } from "@/app/components/LeftSidebar";
 import { RightSidebar } from "@/app/components/RightSidebar";
+import { ConversationList } from "@/app/components/ConversationList";
+import { SettingsDialog } from "@/app/components/SettingsDialog";
 
-interface HomePageInnerProps {
-  config: StandaloneConfig;
-  configDialogOpen: boolean;
-  setConfigDialogOpen: (open: boolean) => void;
-  handleSaveConfig: (config: StandaloneConfig) => void;
-}
-
-// Inner component that uses ChatContext
+// ============ 主内容组件 ============
 function MainContent({
-  assistant,
-  threadId,
-  setThreadId,
-  setConfigDialogOpen,
   showAllChats,
   setShowAllChats,
-  mutateThreads,
-  setMutateThreads,
-  setInterruptCount,
+  onConversationListReady,
 }: {
-  assistant: Assistant | null;
-  threadId: string | null;
-  setThreadId: (id: string | null) => Promise<URLSearchParams>;
-  setConfigDialogOpen: (open: boolean) => void;
   showAllChats: boolean;
   setShowAllChats: (show: boolean) => void;
-  mutateThreads: (() => void) | null;
-  setMutateThreads: (fn: (() => void) | null) => void;
-  setInterruptCount: (count: number) => void;
+  onConversationListReady: (mutate: () => void) => void;
 }) {
-  const { todos, files, setFiles, isLoading, interrupt } = useChatContext();
+  const { todos, files, setFiles, isLoading, interrupt, cid, setCid } = useChatContext();
 
   return (
     <div className="flex flex-1 gap-3 overflow-hidden bg-gray-100 p-3">
@@ -53,7 +32,10 @@ function MainContent({
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm" style={{ maxWidth: 'calc(100% - 560px)' }}>
+      <div
+        className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
+        style={{ maxWidth: "calc(100% - 560px)" }}
+      >
         {/* Chat Header */}
         <div className="flex h-12 flex-shrink-0 items-center justify-between border-b border-gray-200 px-4">
           <div className="flex items-center gap-2">
@@ -73,8 +55,8 @@ function MainContent({
               All Chats
             </button>
             <button
-              onClick={() => setThreadId(null)}
-              disabled={!threadId}
+              onClick={() => setCid(null)}
+              disabled={!cid}
               className="flex items-center gap-1.5 rounded-md bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700 disabled:opacity-50"
             >
               <SquarePen size={14} />
@@ -86,20 +68,19 @@ function MainContent({
         {/* Chat Content */}
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <div className="flex h-full flex-1 flex-col">
-            <ChatInterface assistant={assistant} />
+            <ChatInterface />
           </div>
 
           {/* All Chats Overlay */}
           {showAllChats && (
             <div className="absolute inset-0 z-10 bg-white">
-              <ThreadList
-                onThreadSelect={async (id) => {
-                  await setThreadId(id);
+              <ConversationList
+                onSelect={async (selectedCid) => {
+                  await setCid(selectedCid);
                   setShowAllChats(false);
                 }}
-                onMutateReady={(fn) => setMutateThreads(() => fn)}
+                onMutateReady={onConversationListReady}
                 onClose={() => setShowAllChats(false)}
-                onInterruptCountChange={setInterruptCount}
               />
             </div>
           )}
@@ -119,124 +100,82 @@ function MainContent({
   );
 }
 
-function HomePageInner({
-  config,
-  configDialogOpen,
-  setConfigDialogOpen,
-  handleSaveConfig,
-}: HomePageInnerProps) {
-  const client = useClient();
-  const [threadId, setThreadId] = useQueryState("threadId");
+// ============ 认证后的主页 ============
+function AuthenticatedHome() {
+  const router = useRouter();
+  const { user, logout, isLoading: authLoading } = useAuth();
   const [showAllChats, setShowAllChats] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mutateConversations, setMutateConversations] = useState<(() => void) | null>(null);
 
-  const [mutateThreads, setMutateThreads] = useState<(() => void) | null>(null);
-  const [_interruptCount, setInterruptCount] = useState(0);
-  const [assistant, setAssistant] = useState<Assistant | null>(null);
-
-  const fetchAssistant = useCallback(async () => {
-    const isUUID =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        config.assistantId
-      );
-
-    if (isUUID) {
-      // We should try to fetch the assistant directly with this UUID
-      try {
-        const data = await client.assistants.get(config.assistantId);
-        setAssistant(data);
-      } catch (error) {
-        console.error("Failed to fetch assistant:", error);
-        setAssistant({
-          assistant_id: config.assistantId,
-          graph_id: config.assistantId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          config: {},
-          metadata: {},
-          version: 1,
-          name: "Assistant",
-          context: {},
-        });
-      }
-    } else {
-      try {
-        // We should try to list out the assistants for this graph, and then use the default one.
-        // TODO: Paginate this search, but 100 should be enough for graph name
-        const assistants = await client.assistants.search({
-          graphId: config.assistantId,
-          limit: 100,
-        });
-        const defaultAssistant = assistants.find(
-          (assistant) => assistant.metadata?.["created_by"] === "system"
-        );
-        if (defaultAssistant === undefined) {
-          throw new Error("No default assistant found");
-        }
-        setAssistant(defaultAssistant);
-      } catch (error) {
-        console.error(
-          "Failed to find default assistant from graph_id: try setting the assistant_id directly:",
-          error
-        );
-        setAssistant({
-          assistant_id: config.assistantId,
-          graph_id: config.assistantId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          config: {},
-          metadata: {},
-          version: 1,
-          name: config.assistantId,
-          context: {},
-        });
-      }
-    }
-  }, [client, config.assistantId]);
-
-  useEffect(() => {
-    fetchAssistant();
-  }, [fetchAssistant]);
+  const handleLogout = useCallback(async () => {
+    await logout();
+    router.push("/login");
+  }, [logout, router]);
 
   return (
     <>
-      <ConfigDialog
-        open={configDialogOpen}
-        onOpenChange={setConfigDialogOpen}
-        onSave={handleSaveConfig}
-        initialConfig={config}
-      />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+
       <div className="flex h-screen flex-col bg-white">
         {/* Header */}
         <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-gray-200 px-4">
           <h1 className="text-base font-semibold text-gray-800">Deep Agent UI</h1>
           <div className="flex items-center gap-2">
+            {/* User Info */}
+            {user && (
+              <div className="flex items-center gap-2 mr-2">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-teal-100 text-teal-600">
+                  <User size={16} />
+                </div>
+                <span className="text-sm text-gray-600">{user.name || user.email}</span>
+              </div>
+            )}
+
             <button className="rounded-md p-2 hover:bg-gray-100">
               <Sun size={18} className="text-gray-500" />
             </button>
             <button
-              onClick={() => setConfigDialogOpen(true)}
+              onClick={() => setSettingsOpen(true)}
               className="rounded-md p-2 hover:bg-gray-100"
+              title="Settings"
             >
-              <Settings size={18} className="text-gray-500" />
+              <svg
+                className="w-[18px] h-[18px] text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="rounded-md p-2 hover:bg-gray-100"
+              title="Logout"
+            >
+              <LogOut size={18} className="text-gray-500" />
             </button>
           </div>
         </header>
 
         {/* Main Content */}
-        <ChatProvider
-          activeAssistant={assistant}
-          onHistoryRevalidate={() => mutateThreads?.()}
-        >
+        <ChatProvider onHistoryRevalidate={() => mutateConversations?.()}>
           <MainContent
-            assistant={assistant}
-            threadId={threadId}
-            setThreadId={setThreadId}
-            setConfigDialogOpen={setConfigDialogOpen}
             showAllChats={showAllChats}
             setShowAllChats={setShowAllChats}
-            mutateThreads={mutateThreads}
-            setMutateThreads={setMutateThreads}
-            setInterruptCount={setInterruptCount}
+            onConversationListReady={(fn) => setMutateConversations(() => fn)}
           />
         </ChatProvider>
       </div>
@@ -244,87 +183,50 @@ function HomePageInner({
   );
 }
 
-function HomePageContent() {
-  const [config, setConfig] = useState<StandaloneConfig | null>(null);
-  const [configDialogOpen, setConfigDialogOpen] = useState(false);
-  const [assistantId, setAssistantId] = useQueryState("assistantId");
+// ============ 认证检查包装器 ============
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  // On mount, check for saved config, otherwise show config dialog
   useEffect(() => {
-    const savedConfig = getConfig();
-    if (savedConfig) {
-      setConfig(savedConfig);
-      if (!assistantId) {
-        setAssistantId(savedConfig.assistantId);
-      }
-    } else {
-      setConfigDialogOpen(true);
+    if (!isLoading && !isAuthenticated) {
+      router.push("/login");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthenticated, isLoading, router]);
 
-  // If config changes, update the assistantId
-  useEffect(() => {
-    if (config && !assistantId) {
-      setAssistantId(config.assistantId);
-    }
-  }, [config, assistantId, setAssistantId]);
-
-  const handleSaveConfig = useCallback((newConfig: StandaloneConfig) => {
-    saveConfig(newConfig);
-    setConfig(newConfig);
-  }, []);
-
-  const langsmithApiKey =
-    config?.langsmithApiKey || process.env.NEXT_PUBLIC_LANGSMITH_API_KEY || "";
-
-  if (!config) {
+  if (isLoading) {
     return (
-      <>
-        <ConfigDialog
-          open={configDialogOpen}
-          onOpenChange={setConfigDialogOpen}
-          onSave={handleSaveConfig}
-        />
-        <div className="flex h-screen items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">Welcome to Standalone Chat</h1>
-            <p className="mt-2 text-muted-foreground">
-              Configure your deployment to get started
-            </p>
-            <Button
-              onClick={() => setConfigDialogOpen(true)}
-              className="mt-4"
-            >
-              Open Configuration
-            </Button>
-          </div>
-        </div>
-      </>
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+      </div>
     );
   }
 
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
+// ============ 主页内容 ============
+function HomePageContent() {
   return (
-    <ClientProvider
-      deploymentUrl={config.deploymentUrl}
-      apiKey={langsmithApiKey}
-    >
-      <HomePageInner
-        config={config}
-        configDialogOpen={configDialogOpen}
-        setConfigDialogOpen={setConfigDialogOpen}
-        handleSaveConfig={handleSaveConfig}
-      />
-    </ClientProvider>
+    <AuthProvider>
+      <AuthGuard>
+        <AuthenticatedHome />
+      </AuthGuard>
+    </AuthProvider>
   );
 }
 
+// ============ 导出的主页组件 ============
 export default function HomePage() {
   return (
     <Suspense
       fallback={
         <div className="flex h-screen items-center justify-center">
-          <p className="text-muted-foreground">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
         </div>
       }
     >
