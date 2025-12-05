@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useConversations, type ConversationItem, useDeleteConversation } from "@/app/hooks/useConversations";
+import { useAuth } from "@/providers/AuthProvider";
 import type { Conversation } from "@/app/types/types";
 
 type StatusFilter = "all" | "idle" | "busy" | "interrupted" | "error";
@@ -119,6 +120,9 @@ export function ConversationList({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // 从 AuthProvider 获取认证状态
+  const { token, isAuthenticated } = useAuth();
+
   const { deleteConversation } = useDeleteConversation();
 
   const {
@@ -132,6 +136,8 @@ export function ConversationList({
   } = useConversations({
     status: statusFilter === "all" ? undefined : statusFilter,
     limit: 20,
+    isAuthenticated,
+    token,
   });
 
   const isEmpty = !isLoading && conversations.length === 0;
@@ -375,4 +381,3 @@ export function ConversationList({
     </div>
   );
 }
-

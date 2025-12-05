@@ -2,9 +2,8 @@
 
 import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
-import { useAuth } from "@/providers/AuthProvider";
 import { apiClient } from "@/lib/api/client";
-import type { Conversation, PaginatedResponse, ConversationDetailResponse } from "@/app/types/types";
+import type { Conversation, PaginatedResponse, ConversationDetailResponse, Message } from "@/app/types/types";
 
 // ============ 配置 ============
 const PAGE_SIZE = 20;
@@ -24,12 +23,15 @@ interface UseConversationsOptions {
   status?: Conversation["status"];
   /** 每页数量 */
   limit?: number;
+  /** 是否已认证 */
+  isAuthenticated?: boolean;
+  /** 认证 token */
+  token?: string | null;
 }
 
 // ============ Hook: 会话列表（分页） ============
 export function useConversations(options: UseConversationsOptions = {}) {
-  const { isAuthenticated, token } = useAuth();
-  const { status, limit = PAGE_SIZE } = options;
+  const { status, limit = PAGE_SIZE, isAuthenticated = false, token = null } = options;
 
   const { data, error, size, setSize, isLoading, isValidating, mutate } = useSWRInfinite(
     (pageIndex, previousPageData: ConversationItem[] | null) => {
@@ -102,8 +104,8 @@ export function useConversations(options: UseConversationsOptions = {}) {
 }
 
 // ============ Hook: 单个会话详情 ============
-export function useConversation(cid: string | null) {
-  const { isAuthenticated, token } = useAuth();
+export function useConversation(cid: string | null, options: { isAuthenticated?: boolean; token?: string | null } = {}) {
+  const { isAuthenticated = false, token = null } = options;
 
   const { data, error, isLoading, mutate } = useSWR(
     cid && isAuthenticated && token ? `/api/conversations/${cid}` : null,
@@ -173,7 +175,7 @@ export interface ThreadItem {
  * 兼容旧的 useThreads API
  * @deprecated 请使用 useConversations
  */
-export function useThreads(options: { status?: Conversation["status"]; limit?: number } = {}) {
+export function useThreads(options: { status?: Conversation["status"]; limit?: number; isAuthenticated?: boolean; token?: string | null } = {}) {
   const result = useConversations(options);
 
   // 转换为旧格式
@@ -195,4 +197,3 @@ export function useThreads(options: { status?: Conversation["status"]; limit?: n
     mutate: result.mutate,
   };
 }
-

@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { useQueryState } from "nuqs";
-import { v4 as uuidv4 } from "uuid";
 import { useStream, type StreamTransport } from "./useStream";
-import { useAuth } from "@/providers/AuthProvider";
 import { apiClient } from "@/lib/api/client";
 import type {
   Message,
@@ -25,6 +23,10 @@ export interface UseChatOptions {
   onHistoryRevalidate?: () => void;
   /** 传输方式 */
   transport?: StreamTransport;
+  /** 认证 token（可选，如果不提供则不连接） */
+  token?: string | null;
+  /** 是否已认证 */
+  isAuthenticated?: boolean;
 }
 
 export interface ChatState {
@@ -39,10 +41,12 @@ export interface ChatState {
 
 // ============ Hook ============
 export function useChat(options: UseChatOptions = {}) {
-  const { onHistoryRevalidate, transport = "websocket" } = options;
-
-  // 认证状态
-  const { token, isAuthenticated } = useAuth();
+  const { 
+    onHistoryRevalidate, 
+    transport = "websocket",
+    token = null,
+    isAuthenticated = false,
+  } = options;
 
   // URL 参数管理：使用 cid 替代 threadId
   const [cid, setCid] = useQueryState("cid");
