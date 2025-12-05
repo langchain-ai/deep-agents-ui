@@ -230,6 +230,50 @@ interface ToolOption {
 
 ### 2.1 认证接口
 
+#### POST /api/auth/register
+
+用户注册。
+
+**请求体:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "name": "User Name"
+}
+```
+
+**响应 (201):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "User Name",
+    "avatar": null
+  },
+  "settings": {
+    "mainAgentModel": "gpt-4",
+    "subAgentModel": "gpt-3.5-turbo",
+    "enabledTools": [],
+    "theme": "light"
+  }
+}
+```
+
+**错误响应 (400):**
+```json
+{
+  "error": {
+    "code": "EMAIL_EXISTS",
+    "message": "Email already registered"
+  }
+}
+```
+
+---
+
 #### POST /api/auth/login
 
 用户登录，返回 JWT token。
@@ -270,6 +314,8 @@ interface ToolOption {
   }
 }
 ```
+
+---
 
 #### POST /api/auth/logout
 
