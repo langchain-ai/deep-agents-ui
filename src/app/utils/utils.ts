@@ -1,5 +1,4 @@
-import { Interrupt, Message } from "@langchain/langgraph-sdk";
-import { HumanInterrupt } from "@/app/types/inbox";
+import { Message } from "@langchain/langgraph-sdk";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -155,14 +154,4 @@ export function formatMessageForLLM(message: Message): string {
 export function formatConversationForLLM(messages: Message[]): string {
   const formattedMessages = messages.map(formatMessageForLLM);
   return formattedMessages.join("\n\n---\n\n");
-}
-
-export function getInterruptTitle(interrupt: Interrupt): string {
-  try {
-    const interruptValue = (interrupt.value as any)?.[0] as HumanInterrupt;
-    return interruptValue?.action_request.action ?? "Unknown interrupt";
-  } catch (error) {
-    console.error("Error getting interrupt title:", error);
-    return "Unknown interrupt";
-  }
 }
