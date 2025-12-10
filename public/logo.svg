@@ -1,0 +1,38 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- SeenOS Logo - AI Eye Concept -->
+  <!-- Outer ring representing "seeing" / observation -->
+  <circle cx="100" cy="100" r="80" stroke="url(#gradient1)" stroke-width="8" fill="none"/>
+  
+  <!-- Inner eye iris - representing AI intelligence -->
+  <circle cx="100" cy="100" r="50" fill="url(#gradient2)"/>
+  
+  <!-- Pupil with circuit pattern - representing OS/technology -->
+  <circle cx="100" cy="100" r="25" fill="#1c3c3c"/>
+  
+  <!-- Digital/circuit dots representing AI processing -->
+  <circle cx="100" cy="85" r="4" fill="#2dd4bf"/>
+  <circle cx="112" cy="100" r="3" fill="#2dd4bf"/>
+  <circle cx="100" cy="115" r="4" fill="#2dd4bf"/>
+  <circle cx="88" cy="100" r="3" fill="#2dd4bf"/>
+  
+  <!-- Connecting lines for circuit feel -->
+  <line x1="100" y1="85" x2="100" y2="75" stroke="#2dd4bf" stroke-width="2"/>
+  <line x1="112" y1="100" x2="122" y2="100" stroke="#2dd4bf" stroke-width="2"/>
+  <line x1="100" y1="115" x2="100" y2="125" stroke="#2dd4bf" stroke-width="2"/>
+  <line x1="88" y1="100" x2="78" y2="100" stroke="#2dd4bf" stroke-width="2"/>
+  
+  <!-- Highlight arc suggesting vision/perception -->
+  <path d="M 60 70 Q 70 50 100 45" stroke="#2dd4bf" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6"/>
+  
+  <defs>
+    <linearGradient id="gradient1" x1="20" y1="20" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#1c3c3c"/>
+    </linearGradient>
+    <linearGradient id="gradient2" x1="50" y1="50" x2="150" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3fcdd6"/>
+      <stop offset="50%" stop-color="#2bb4a7"/>
+      <stop offset="100%" stop-color="#1c3c3c"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,26 @@
+# ============================================================
+# Seenos UI Docker Compose - 测试环境覆盖配置
+# ============================================================
+# 使用方法:
+#   docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+# ============================================================
+
+version: '3.8'
+
+services:
+  seenos-ui:
+    build:
+      args:
+        - NEXT_PUBLIC_API_URL=https://api-test.seenos.ai
+        - NEXT_PUBLIC_WS_URL=wss://api-test.seenos.ai/api/chat/stream
+        - NEXT_PUBLIC_DEBUG=true
+    image: seenos-ui:test
+    environment:
+      - NODE_ENV=production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.seenos-ui-test.rule=Host(`test.seenos.ai`)"
+      - "traefik.http.routers.seenos-ui-test.entrypoints=websecure"
+      - "traefik.http.routers.seenos-ui-test.tls.certresolver=letsencrypt"
+      - "traefik.http.services.seenos-ui-test.loadbalancer.server.port=3000"
+

@@ -1,0 +1,15 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- SeenOS Favicon - Ultra simplified for 16x16, 32x32 display -->
+  <circle cx="16" cy="16" r="14" fill="url(#favGradient)"/>
+  <circle cx="16" cy="16" r="8" fill="#1c3c3c"/>
+  
+  <!-- Single bright center dot -->
+  <circle cx="16" cy="16" r="3" fill="#2dd4bf"/>
+  
+  <defs>
+    <linearGradient id="favGradient" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3fcdd6"/>
+      <stop offset="100%" stop-color="#1c3c3c"/>
+    </linearGradient>
+  </defs>
+</svg>

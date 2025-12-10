@@ -3,7 +3,7 @@
 import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
 import { apiClient } from "@/lib/api/client";
-import type { Conversation, PaginatedResponse, ConversationDetailResponse, Message } from "@/app/types/types";
+import type { Conversation, PaginatedResponse, ConversationDetailResponse } from "@/types";
 
 // ============ 配置 ============
 const PAGE_SIZE = 20;
@@ -56,7 +56,7 @@ export function useConversations(options: UseConversationsOptions = {}) {
       if (status) params.status = status;
 
       const response = await apiClient.get<PaginatedResponse<Conversation>>(
-        "/api/conversations",
+        "/conversations",
         params
       );
 
@@ -73,9 +73,10 @@ export function useConversations(options: UseConversationsOptions = {}) {
       );
     },
     {
-      revalidateFirstPage: true,
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
+      revalidateFirstPage: false,  // 禁用自动重新验证第一页，防止重复请求
+      revalidateOnFocus: false,    // 禁用焦点时重新验证
+      revalidateOnReconnect: false, // 禁用重连时重新验证
+      dedupingInterval: 5000,      // 5秒内相同请求去重
     }
   );
 
@@ -108,8 +109,8 @@ export function useConversation(cid: string | null, options: { isAuthenticated?:
   const { isAuthenticated = false, token = null } = options;
 
   const { data, error, isLoading, mutate } = useSWR(
-    cid && isAuthenticated && token ? `/api/conversations/${cid}` : null,
-    () => apiClient.get<ConversationDetailResponse>(`/api/conversations/${cid}`),
+    cid && isAuthenticated && token ? `/conversations/${cid}` : null,
+    () => apiClient.get<ConversationDetailResponse>(`/conversations/${cid}`),
     {
       revalidateOnFocus: false,
     }
@@ -127,7 +128,7 @@ export function useConversation(cid: string | null, options: { isAuthenticated?:
 export function useCreateConversation() {
   const createConversation = async (title?: string): Promise<Conversation> => {
     const response = await apiClient.post<{ conversation: Conversation }>(
-      "/api/conversations",
+      "/conversations",
       { title }
     );
     return response.conversation;
@@ -139,7 +140,7 @@ export function useCreateConversation() {
 // ============ Hook: 删除会话 ============
 export function useDeleteConversation() {
   const deleteConversation = async (cid: string): Promise<void> => {
-    await apiClient.delete(`/api/conversations/${cid}`);
+    await apiClient.delete(`/conversations/${cid}`);
   };
 
   return { deleteConversation };
@@ -152,7 +153,7 @@ export function useUpdateConversation() {
     data: Partial<Pick<Conversation, "title" | "status">>
   ): Promise<Conversation> => {
     const response = await apiClient.patch<{ conversation: Conversation }>(
-      `/api/conversations/${cid}`,
+      `/conversations/${cid}`,
       data
     );
     return response.conversation;
@@ -161,39 +162,3 @@ export function useUpdateConversation() {
   return { updateConversation };
 }
 
-// ============ 兼容旧 API 的类型 ============
-export interface ThreadItem {
-  id: string;
-  updatedAt: Date;
-  status: Conversation["status"];
-  title: string;
-  description: string;
-}
-
-// ============ 兼容旧 API 的 Hook ============
-/**
- * 兼容旧的 useThreads API
- * @deprecated 请使用 useConversations
- */
-export function useThreads(options: { status?: Conversation["status"]; limit?: number; isAuthenticated?: boolean; token?: string | null } = {}) {
-  const result = useConversations(options);
-
-  // 转换为旧格式
-  const threads: ThreadItem[] = result.conversations.map((conv) => ({
-    id: conv.cid,
-    updatedAt: conv.updatedAt,
-    status: conv.status,
-    title: conv.title,
-    description: conv.description || "",
-  }));
-
-  return {
-    data: [threads],
-    isLoading: result.isLoading,
-    isValidating: result.isValidating,
-    error: result.error,
-    size: 1,
-    setSize: () => {},
-    mutate: result.mutate,
-  };
-}

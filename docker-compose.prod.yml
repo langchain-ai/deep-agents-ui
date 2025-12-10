@@ -1,0 +1,46 @@
+# ============================================================
+# Seenos UI Docker Compose - 生产环境覆盖配置
+# ============================================================
+# 使用方法:
+#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ============================================================
+
+version: '3.8'
+
+services:
+  seenos-ui:
+    build:
+      args:
+        - NEXT_PUBLIC_API_URL=https://api.seenos.ai
+        - NEXT_PUBLIC_WS_URL=wss://api.seenos.ai/api/chat/stream
+        - NEXT_PUBLIC_DEBUG=false
+    image: seenos-ui:production
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.seenos-ui.rule=Host(`app.seenos.ai`)"
+      - "traefik.http.routers.seenos-ui.entrypoints=websecure"
+      - "traefik.http.routers.seenos-ui.tls.certresolver=letsencrypt"
+      - "traefik.http.services.seenos-ui.loadbalancer.server.port=3000"
+      - "traefik.http.services.seenos-ui.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.seenos-ui.loadbalancer.sticky.cookie.name=seenos_session"
+

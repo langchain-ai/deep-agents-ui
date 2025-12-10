@@ -1,0 +1,42 @@
+# ============================================================
+# Seenos UI Docker Compose 配置
+# ============================================================
+# 使用方法:
+#   开发环境: docker-compose up -d
+#   测试环境: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+#   生产环境: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ============================================================
+
+version: '3.8'
+
+services:
+  seenos-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-}
+        - NEXT_PUBLIC_SSE_URL=${NEXT_PUBLIC_SSE_URL:-}
+        - NEXT_PUBLIC_DEFAULT_TRANSPORT=${NEXT_PUBLIC_DEFAULT_TRANSPORT:-websocket}
+        - NEXT_PUBLIC_DEBUG=${NEXT_PUBLIC_DEBUG:-false}
+    image: seenos-ui:${IMAGE_TAG:-latest}
+    container_name: seenos-ui
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - seenos-network
+
+networks:
+  seenos-network:
+    driver: bridge
+

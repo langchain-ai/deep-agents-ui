@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { AuthProvider } from "./AuthProvider";
+import { ContextProvider } from "./ContextProvider";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -12,6 +13,12 @@ interface ProvidersProps {
  * 用于在服务器组件 (layout.tsx) 中包裹客户端 context providers
  */
 export function Providers({ children }: ProvidersProps) {
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <AuthProvider>
+      <ContextProvider>
+        {children}
+      </ContextProvider>
+    </AuthProvider>
+  );
 }
 

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { useQueryState } from "nuqs";
-import { Sun, SquarePen, Copy, MessageCircle, LogOut, User } from "lucide-react";
+import Image from "next/image";
+import { Sun, Moon, SquarePen, Copy, MessageCircle, LogOut, User } from "lucide-react";
 import { ChatProvider, useChatContext } from "@/providers/ChatProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { ChatInterface } from "@/app/components/ChatInterface";
@@ -11,53 +11,90 @@ import { LeftSidebar } from "@/app/components/LeftSidebar";
 import { RightSidebar } from "@/app/components/RightSidebar";
 import { ConversationList } from "@/app/components/ConversationList";
 import { SettingsDialog } from "@/app/components/SettingsDialog";
+import { useConversations } from "@/hooks/useConversations";
+
+// ============ 主题切换 Hook ============
+function useTheme() {
+  const [theme, setThemeState] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    // 初始化时读取保存的主题或系统偏好
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
+    setThemeState(initialTheme);
+    applyTheme(initialTheme);
+  }, []);
+
+  const applyTheme = (newTheme: "light" | "dark") => {
+    const root = document.documentElement;
+    if (newTheme === "dark") {
+      root.classList.add("dark");
+      root.classList.remove("light");
+      root.setAttribute("data-joy-color-scheme", "dark");
+    } else {
+      root.classList.remove("dark");
+      root.classList.add("light");
+      root.setAttribute("data-joy-color-scheme", "light");
+    }
+  };
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const newTheme = prev === "light" ? "dark" : "light";
+      localStorage.setItem("theme", newTheme);
+      applyTheme(newTheme);
+      return newTheme;
+    });
+  }, []);
+
+  return { theme, toggleTheme };
+}
 
 // ============ 主内容组件 ============
 function MainContent({
   showAllChats,
   setShowAllChats,
-  onConversationListReady,
 }: {
   showAllChats: boolean;
   setShowAllChats: (show: boolean) => void;
-  onConversationListReady: (mutate: () => void) => void;
 }) {
-  const { todos, files, setFiles, isLoading, interrupt, cid, setCid } = useChatContext();
+  const { todos, files, setFiles, isLoading, interrupt, cid, startNewChat, switchConversation } = useChatContext();
 
   return (
-    <div className="flex flex-1 gap-3 overflow-hidden bg-gray-100 p-3">
+    <div className="flex flex-1 gap-3 overflow-hidden bg-muted p-3">
       {/* Left Sidebar */}
-      <div className="w-[240px] flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="w-[240px] flex-shrink-0 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
         <LeftSidebar todos={todos} />
       </div>
 
       {/* Main Chat Area */}
       <div
-        className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
-        style={{ maxWidth: "calc(100% - 560px)" }}
+        className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm"
       >
         {/* Chat Header */}
-        <div className="flex h-12 flex-shrink-0 items-center justify-between border-b border-gray-200 px-4">
+        <div className="flex h-12 flex-shrink-0 items-center justify-between border-b border-border px-4">
           <div className="flex items-center gap-2">
-            <MessageCircle size={18} className="text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Chat</span>
+            <MessageCircle size={18} className="text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Chat</span>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-100">
+            <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">
               <Copy size={14} />
               Copy
             </button>
             <button
               onClick={() => setShowAllChats(!showAllChats)}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-100"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <MessageCircle size={14} />
               All Chats
             </button>
             <button
-              onClick={() => setCid(null)}
+              onClick={startNewChat}
               disabled={!cid}
-              className="flex items-center gap-1.5 rounded-md bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+              style={{ backgroundColor: 'hsl(173, 58%, 35%)' }}
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
             >
               <SquarePen size={14} />
               New Chat
@@ -73,13 +110,13 @@ function MainContent({
 
           {/* All Chats Overlay */}
           {showAllChats && (
-            <div className="absolute inset-0 z-10 bg-white">
+            <div className="absolute inset-0 z-10 bg-card">
               <ConversationList
-                onSelect={async (selectedCid) => {
-                  await setCid(selectedCid);
+                onSelect={(selectedCid) => {
+                  // 立即关闭列表，然后切换会话（异步加载历史）
                   setShowAllChats(false);
+                  switchConversation(selectedCid);
                 }}
-                onMutateReady={onConversationListReady}
                 onClose={() => setShowAllChats(false)}
               />
             </div>
@@ -88,7 +125,7 @@ function MainContent({
       </div>
 
       {/* Right Sidebar */}
-      <div className="w-[300px] flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="w-[300px] flex-shrink-0 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
         <RightSidebar
           files={files}
           setFiles={setFiles}
@@ -103,10 +140,16 @@ function MainContent({
 // ============ 认证后的主页 ============
 function AuthenticatedHome() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, token, isAuthenticated } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showAllChats, setShowAllChats] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [mutateConversations, setMutateConversations] = useState<(() => void) | null>(null);
+  
+  // 在顶层使用 useConversations hook，确保 mutate 始终可用
+  const { mutate: mutateConversations } = useConversations({
+    isAuthenticated,
+    token,
+  });
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -117,31 +160,48 @@ function AuthenticatedHome() {
     <>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 
-      <div className="flex h-screen flex-col bg-white">
+      <div className="flex h-screen flex-col bg-background">
         {/* Header */}
-        <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-gray-200 px-4">
-          <h1 className="text-base font-semibold text-gray-800">Deep Agent UI</h1>
+        <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo-icon.svg"
+              alt="SeenOS"
+              width={28}
+              height={28}
+              priority
+            />
+            <h1 className="text-base font-semibold text-foreground">SeenOS</h1>
+          </div>
           <div className="flex items-center gap-2">
             {/* User Info */}
             {user && (
-              <div className="flex items-center gap-2 mr-2">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-teal-100 text-teal-600">
+              <div className="mr-2 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <User size={16} />
                 </div>
-                <span className="text-sm text-gray-600">{user.name || user.email}</span>
+                <span className="text-sm text-muted-foreground">{user.name || user.email}</span>
               </div>
             )}
 
-            <button className="rounded-md p-2 hover:bg-gray-100">
-              <Sun size={18} className="text-gray-500" />
+            <button
+              onClick={toggleTheme}
+              className="rounded-md p-2 hover:bg-accent"
+              title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+            >
+              {theme === "light" ? (
+                <Sun size={18} className="text-muted-foreground" />
+              ) : (
+                <Moon size={18} className="text-muted-foreground" />
+              )}
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              className="rounded-md p-2 hover:bg-gray-100"
+              className="rounded-md p-2 hover:bg-accent"
               title="Settings"
             >
               <svg
-                className="w-[18px] h-[18px] text-gray-500"
+                className="h-[18px] w-[18px] text-muted-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -162,20 +222,19 @@ function AuthenticatedHome() {
             </button>
             <button
               onClick={handleLogout}
-              className="rounded-md p-2 hover:bg-gray-100"
+              className="rounded-md p-2 hover:bg-accent"
               title="Logout"
             >
-              <LogOut size={18} className="text-gray-500" />
+              <LogOut size={18} className="text-muted-foreground" />
             </button>
           </div>
         </header>
 
         {/* Main Content */}
-        <ChatProvider onHistoryRevalidate={() => mutateConversations?.()}>
+        <ChatProvider onHistoryRevalidate={() => mutateConversations()}>
           <MainContent
             showAllChats={showAllChats}
             setShowAllChats={setShowAllChats}
-            onConversationListReady={(fn) => setMutateConversations(() => fn)}
           />
         </ChatProvider>
       </div>
@@ -196,8 +255,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -223,8 +282,8 @@ export default function HomePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-screen items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        <div className="flex h-screen items-center justify-center bg-background">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
         </div>
       }
     >

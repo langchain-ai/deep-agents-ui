@@ -195,7 +195,7 @@ export async function sendSSEMessage(
     name?: string;
   }>
 ): Promise<{ messageId: string }> {
-  return apiClient.post<{ messageId: string }>(`/api/conversations/${cid}/messages`, {
+  return apiClient.post<{ messageId: string }>(`/chat/${cid}/messages`, {
     content,
     attachments,
   });
@@ -209,7 +209,7 @@ export async function resumeSSEInterrupt(
   interruptId: string,
   decision: unknown
 ): Promise<void> {
-  return apiClient.post(`/api/conversations/${cid}/interrupt/resume`, {
+  return apiClient.post(`/chat/${cid}/interrupt/resume`, {
     interruptId,
     decision,
   });
@@ -219,7 +219,7 @@ export async function resumeSSEInterrupt(
  * SSE 停止生成
  */
 export async function stopSSEGeneration(cid: string): Promise<void> {
-  return apiClient.post(`/api/conversations/${cid}/stop`);
+  return apiClient.post(`/chat/${cid}/stop`);
 }
 
 /**

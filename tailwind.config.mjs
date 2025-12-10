@@ -368,7 +368,7 @@ export default {
   plugins: [
     containerQueries,
     typography,
-    forms,
+    forms({ strategy: 'class' }), // Use class strategy to avoid global form styles
     tailwindcssAnimate,
     headlessui,
     plugin(({ addUtilities, addBase }) => {

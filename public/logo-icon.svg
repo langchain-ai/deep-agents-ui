@@ -1,0 +1,24 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- SeenOS Icon - Simplified version for small sizes -->
+  <circle cx="32" cy="32" r="28" stroke="url(#iconGradient1)" stroke-width="3" fill="none"/>
+  <circle cx="32" cy="32" r="16" fill="url(#iconGradient2)"/>
+  <circle cx="32" cy="32" r="8" fill="#1c3c3c"/>
+  
+  <!-- Simplified circuit dots -->
+  <circle cx="32" cy="26" r="2" fill="#2dd4bf"/>
+  <circle cx="38" cy="32" r="1.5" fill="#2dd4bf"/>
+  <circle cx="32" cy="38" r="2" fill="#2dd4bf"/>
+  <circle cx="26" cy="32" r="1.5" fill="#2dd4bf"/>
+  
+  <defs>
+    <linearGradient id="iconGradient1" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#1c3c3c"/>
+    </linearGradient>
+    <linearGradient id="iconGradient2" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3fcdd6"/>
+      <stop offset="50%" stop-color="#2bb4a7"/>
+      <stop offset="100%" stop-color="#1c3c3c"/>
+    </linearGradient>
+  </defs>
+</svg>

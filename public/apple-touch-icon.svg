@@ -1,0 +1,27 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Apple Touch Icon - Rounded corners handled by iOS -->
+  <rect width="180" height="180" fill="#1c3c3c"/>
+  
+  <!-- SeenOS Icon centered -->
+  <circle cx="90" cy="90" r="60" stroke="url(#appleGradient1)" stroke-width="6" fill="none"/>
+  <circle cx="90" cy="90" r="38" fill="url(#appleGradient2)"/>
+  <circle cx="90" cy="90" r="18" fill="#0f1f1f"/>
+  
+  <!-- Circuit dots -->
+  <circle cx="90" cy="78" r="3" fill="#5eead4"/>
+  <circle cx="102" cy="90" r="2.5" fill="#5eead4"/>
+  <circle cx="90" cy="102" r="3" fill="#5eead4"/>
+  <circle cx="78" cy="90" r="2.5" fill="#5eead4"/>
+  
+  <defs>
+    <linearGradient id="appleGradient1" x1="30" y1="30" x2="150" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5eead4"/>
+      <stop offset="100%" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <linearGradient id="appleGradient2" x1="52" y1="52" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="50%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0d5751"/>
+    </linearGradient>
+  </defs>
+</svg>

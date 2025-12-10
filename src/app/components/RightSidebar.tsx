@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";
-import { FileText, BookOpen, Wrench, Settings2, Activity, Search } from "lucide-react";
+import { FileText, BookOpen, Wrench, Settings2, Activity, Search, FileEdit, Eye } from "lucide-react";
 import type { FileItem } from "@/app/types/types";
 import { FileViewDialog } from "@/app/components/FileViewDialog";
 
@@ -17,13 +17,13 @@ type PlaybookType = "Research" | "Build" | "Optimize" | "Monitor";
 const PlaybookIcon = ({ type }: { type: PlaybookType }) => {
   switch (type) {
     case "Research":
-      return <BookOpen size={20} className="text-gray-500" />;
+      return <BookOpen size={20} className="text-muted-foreground" />;
     case "Build":
-      return <Wrench size={20} className="text-gray-500" />;
+      return <Wrench size={20} className="text-muted-foreground" />;
     case "Optimize":
-      return <Settings2 size={20} className="text-gray-500" />;
+      return <Settings2 size={20} className="text-muted-foreground" />;
     case "Monitor":
-      return <Activity size={20} className="text-gray-500" />;
+      return <Activity size={20} className="text-muted-foreground" />;
   }
 };
 
@@ -35,7 +35,12 @@ export const RightSidebar = React.memo<RightSidebarProps>(
 
     const handleSaveFile = useCallback(
       async (fileName: string, content: string) => {
-        await setFiles({ ...files, [fileName]: content });
+        // Convert files to Record<string, string> format
+        const filesAsStrings: Record<string, string> = {};
+        for (const [key, value] of Object.entries(files)) {
+          filesAsStrings[key] = typeof value === "string" ? value : value.content;
+        }
+        await setFiles({ ...filesAsStrings, [fileName]: content });
         setSelectedFile({ path: fileName, content: content });
       },
       [files, setFiles]
@@ -53,10 +58,10 @@ export const RightSidebar = React.memo<RightSidebarProps>(
     const playbooks: PlaybookType[] = ["Research", "Build", "Optimize", "Monitor"];
 
     return (
-      <div className="flex h-full flex-col bg-white">
+      <div className="flex h-full flex-col bg-card">
         {/* Playbooks Section */}
-        <div className="flex-shrink-0 border-b border-gray-100 p-4">
-          <div className="mb-3 flex items-center gap-2">
+        <div className="flex-shrink-0 border-b border-border p-4 pb-5">
+          <div className="mb-4 flex items-center gap-2">
             <svg
               width="16"
               height="16"
@@ -66,23 +71,23 @@ export const RightSidebar = React.memo<RightSidebarProps>(
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-gray-500"
+              className="text-muted-foreground"
             >
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
-            <span className="text-sm font-medium text-gray-700">Playbooks</span>
+            <span className="text-sm font-medium text-foreground">Playbooks</span>
           </div>
 
           {/* Playbooks Grid */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2.5">
             {playbooks.map((playbook) => (
               <button
                 key={playbook}
-                className="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-white p-3 transition-colors hover:bg-gray-50"
+                className="flex flex-col items-center justify-center rounded-lg border border-border bg-card px-3 py-4 transition-colors hover:bg-accent"
               >
                 <PlaybookIcon type={playbook} />
-                <span className="mt-1.5 text-xs font-medium text-gray-600">
+                <span className="mt-2 text-xs font-medium text-muted-foreground">
                   {playbook}
                 </span>
               </button>
@@ -94,11 +99,14 @@ export const RightSidebar = React.memo<RightSidebarProps>(
         <div className="flex min-h-0 flex-1 flex-col p-4">
           <div className="mb-3 flex flex-shrink-0 items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText size={16} className="text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Artefacts</span>
+              <FileText size={16} className="text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Artefacts</span>
             </div>
             {fileCount > 0 && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-600 px-1.5 text-[10px] font-medium text-white">
+              <span 
+                style={{ backgroundColor: 'hsl(173, 58%, 35%)' }}
+                className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium text-white"
+              >
                 {fileCount}
               </span>
             )}
@@ -109,14 +117,14 @@ export const RightSidebar = React.memo<RightSidebarProps>(
             <div className="relative mb-3 flex-shrink-0">
               <Search
                 size={14}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
               />
               <input
                 type="text"
                 placeholder="Search files..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-8 pr-3 text-xs text-gray-700 placeholder:text-gray-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-lg border border-border bg-background py-2 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           )}
@@ -124,11 +132,11 @@ export const RightSidebar = React.memo<RightSidebarProps>(
           {/* Files List - Scrollable */}
           <div className="min-h-0 flex-1 overflow-y-auto">
             {fileCount === 0 ? (
-              <p className="py-4 text-center text-xs text-gray-400">
+              <p className="py-4 text-center text-xs text-muted-foreground">
                 No artefacts created yet
               </p>
             ) : filteredFiles.length === 0 ? (
-              <p className="py-4 text-center text-xs text-gray-400">
+              <p className="py-4 text-center text-xs text-muted-foreground">
                 No files matching "{searchQuery}"
               </p>
             ) : (
@@ -136,40 +144,75 @@ export const RightSidebar = React.memo<RightSidebarProps>(
                 {filteredFiles.map((file) => {
                   const filePath = String(file);
                   const rawContent = files[file];
-                  let fileContent: string;
+                  let fileItem: FileItem;
+                  
                   if (
                     typeof rawContent === "object" &&
                     rawContent !== null &&
                     "content" in rawContent
                   ) {
-                    const contentArray = (rawContent as { content: unknown })
-                      .content;
-                    if (Array.isArray(contentArray)) {
-                      fileContent = contentArray.join("\n");
-                    } else {
-                      fileContent = String(contentArray || "");
-                    }
+                    const rawFileItem = rawContent as FileItem;
+                    const contentArray = rawFileItem.content;
+                    const content = Array.isArray(contentArray)
+                      ? contentArray.join("\n")
+                      : String(contentArray || "");
+                    
+                    fileItem = {
+                      path: filePath,
+                      content,
+                      language: rawFileItem.language,
+                      editable: rawFileItem.editable,
+                      lastModified: rawFileItem.lastModified,
+                      oldContent: rawFileItem.oldContent,
+                      lineStart: rawFileItem.lineStart,
+                      lineEnd: rawFileItem.lineEnd,
+                    };
                   } else {
-                    fileContent = String(rawContent || "");
+                    fileItem = {
+                      path: filePath,
+                      content: String(rawContent || ""),
+                    };
                   }
+
+                  const hasChanges = !!fileItem.oldContent;
+                  const isEditable = fileItem.editable !== false;
 
                   return (
                     <button
                       key={filePath}
                       type="button"
-                      onClick={() =>
-                        setSelectedFile({ path: filePath, content: fileContent })
-                      }
-                      className="flex w-full items-start gap-3 rounded-lg border border-gray-200 bg-white p-3 text-left transition-colors hover:bg-gray-50"
+                      onClick={() => setSelectedFile(fileItem)}
+                      className="group flex w-full items-start gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-accent"
                     >
-                      <FileText size={16} className="mt-0.5 flex-shrink-0 text-gray-400" />
+                      {hasChanges ? (
+                        <FileEdit size={16} className="mt-0.5 flex-shrink-0 text-primary" />
+                      ) : (
+                        <FileText size={16} className="mt-0.5 flex-shrink-0 text-muted-foreground" />
+                      )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-gray-700">
-                          {filePath.split("/").pop()}
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {filePath.split("/").pop()}
+                          </p>
+                          {hasChanges && (
+                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                              Modified
+                            </span>
+                          )}
+                          {!isEditable && (
+                            <span title="Read only">
+                              <Eye size={12} className="text-muted-foreground" />
+                            </span>
+                          )}
+                        </div>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {filePath.startsWith('/') ? filePath : `/${filePath}`}
                         </p>
-                        <p className="truncate text-xs text-gray-400">
-                          /{filePath}
-                        </p>
+                        {fileItem.lastModified && (
+                          <p className="mt-1 text-[10px] text-muted-foreground/70">
+                            {new Date(fileItem.lastModified).toLocaleTimeString()}
+                          </p>
+                        )}
                       </div>
                     </button>
                   );

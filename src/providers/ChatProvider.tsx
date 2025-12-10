@@ -1,8 +1,8 @@
 "use client";
 
 import { ReactNode, createContext, useContext } from "react";
-import { useChat, type ChatContextType } from "@/app/hooks/useChat";
-import type { StreamTransport } from "@/app/hooks/useStream";
+import { useChat, type ChatContextType } from "@/hooks/useChat";
+import type { StreamTransport } from "@/hooks/useStream";
 import { useAuth } from "@/providers/AuthProvider";
 
 // ============ 类型定义 ============

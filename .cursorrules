@@ -1,0 +1,271 @@
+# Seenos Frontend Project Rules
+
+## 项目概述
+
+这是 Seenos AI Agent 平台的前端项目，基于 Next.js 14 (App Router) + TypeScript + Tailwind CSS 构建。
+
+## 技术栈
+
+- **框架**: Next.js 14 (App Router)
+- **语言**: TypeScript
+- **样式**: Tailwind CSS + CSS Variables
+- **UI 组件**: shadcn/ui (Radix UI primitives)
+- **状态管理**: React Context + Custom Hooks
+- **数据获取**: SWR + 自定义 API Client
+- **实时通信**: WebSocket
+- **图标**: Lucide React
+
+## 目录结构
+
+```
+src/
+├── app/                           # Next.js App Router
+│   ├── (auth)/                    # 认证路由组（不影响 URL）
+│   │   ├── layout.tsx             # 认证页面共享布局
+│   │   ├── login/page.tsx         # 登录页面
+│   │   └── register/page.tsx      # 注册页面（需要邀请码）
+│   ├── components/                # 业务组件
+│   │   ├── ChatInterface.tsx      # 聊天界面主组件
+│   │   ├── ChatMessage.tsx        # 消息渲染组件
+│   │   ├── ConversationList.tsx   # 会话列表
+│   │   ├── ContextFilePreview.tsx # Context 文件预览对话框
+│   │   ├── LeftSidebar.tsx        # 左侧边栏（Context + Tasks）
+│   │   ├── RightSidebar.tsx       # 右侧边栏（Files）
+│   │   ├── MarkdownContent.tsx    # Markdown 渲染
+│   │   ├── ToolCallBox.tsx        # 工具调用显示
+│   │   └── settings/              # 设置相关组件
+│   │       ├── SettingsDialog.tsx # 设置对话框
+│   │       ├── SettingsContext.tsx# 设置状态管理
+│   │       └── tabs/              # 设置标签页
+│   │           ├── MainAgentTab.tsx
+│   │           ├── SubAgentsTab.tsx
+│   │           ├── ToolsTab.tsx
+│   │           ├── ContextTab.tsx # Context/RAG 设置
+│   │           └── AppearanceTab.tsx
+│   ├── types/                     # 类型定义
+│   │   └── types.ts               # 所有 TypeScript 类型
+│   ├── globals.css                # 全局样式 + CSS 变量
+│   ├── layout.tsx                 # 根布局
+│   └── page.tsx                   # 主页面
+├── components/
+│   └── ui/                        # shadcn/ui 基础组件
+│       ├── button.tsx
+│       ├── dialog.tsx
+│       ├── input.tsx
+│       ├── select.tsx
+│       ├── slider.tsx
+│       ├── switch.tsx
+│       └── ...
+├── hooks/                         # 自定义 Hooks
+│   ├── index.ts                   # 导出入口
+│   ├── useChat.ts                 # 聊天状态管理
+│   ├── useStream.ts               # WebSocket 流处理
+│   └── useConversations.ts        # 会话列表管理
+├── lib/                           # 工具库
+│   ├── api/
+│   │   └── client.ts              # HTTP API 客户端
+│   ├── stream/
+│   │   └── websocket.ts           # WebSocket 封装
+│   └── utils.ts                   # 工具函数
+├── providers/                     # React Context Providers
+│   ├── AuthProvider.tsx           # 认证状态
+│   ├── ChatProvider.tsx           # 聊天状态
+│   ├── ContextProvider.tsx        # Context/RAG 文件状态
+│   └── Providers.tsx              # Provider 组合
+└── types/
+    └── index.ts                   # 类型重导出（使用 @/types）
+```
+
+## 导入路径别名
+
+使用 `@/` 作为 `src/` 的别名：
+
+```typescript
+// ✅ 推荐
+import { useChat } from "@/hooks/useChat";
+import { Button } from "@/components/ui/button";
+import type { Message } from "@/types";
+import { apiClient } from "@/lib/api/client";
+
+// ❌ 避免
+import { useChat } from "../../../hooks/useChat";
+```
+
+## 核心概念
+
+### 1. API 客户端 (`src/lib/api/client.ts`)
+
+所有 HTTP 请求通过 `apiClient` 单例：
+
+```typescript
+import { apiClient } from "@/lib/api/client";
+
+// 自动携带 Authorization header
+const data = await apiClient.get<ResponseType>("/endpoint");
+const result = await apiClient.post<ResponseType>("/endpoint", body);
+```
+
+### 2. WebSocket 流 (`src/hooks/useStream.ts`)
+
+实时消息通过 WebSocket 处理：
+
+```typescript
+// 事件类型
+type StreamEventType = 
+  | 'message_start'    // 消息开始
+  | 'content_delta'    // 内容增量
+  | 'message_end'      // 消息结束
+  | 'tool_call_start'  // 工具调用开始
+  | 'tool_call_end'    // 工具调用结束
+  | 'todos_update'     // Todos 更新
+  | 'file_operation'   // 文件操作
+  | 'interrupt'        // 中断（需要用户确认）
+  | 'error'            // 错误
+  | 'done';            // 完成
+```
+
+### 3. 认证 (`src/providers/AuthProvider.tsx`)
+
+```typescript
+import { useAuth } from "@/providers/AuthProvider";
+
+const { 
+  user,           // 当前用户
+  isAuthenticated,// 是否已登录
+  login,          // 登录方法
+  register,       // 注册方法（需要邀请码）
+  logout,         // 登出方法
+  updateSettings, // 更新用户设置
+} = useAuth();
+```
+
+### 4. Context/RAG (`src/providers/ContextProvider.tsx`)
+
+文件上传和 RAG 功能：
+
+```typescript
+import { useContextFiles } from "@/providers/ContextProvider";
+
+const {
+  files,           // 上传的文件列表
+  uploadFile,      // 上传文件
+  deleteFile,      // 删除文件
+  getFileContent,  // 获取文件内容
+  getFileChunks,   // 获取文件分块
+  downloadFile,    // 下载原始文件
+  searchContext,   // 搜索测试
+} = useContextFiles();
+```
+
+## 类型定义
+
+主要类型在 `src/app/types/types.ts`，可通过 `@/types` 导入：
+
+```typescript
+import type { 
+  Message,           // 消息
+  ToolCall,          // 工具调用
+  TodoItem,          // 任务项
+  Conversation,      // 会话
+  User,              // 用户
+  UserSettings,      // 用户设置
+  ContextFile,       // Context 文件
+  TokenUsageSummary, // Token 使用统计
+} from "@/types";
+```
+
+## 样式规范
+
+### CSS 变量
+
+在 `globals.css` 中定义，支持亮色/暗色主题：
+
+```css
+/* 使用 HSL 格式 */
+--primary: 173 58% 35%;
+--background: 0 0% 99%;
+--foreground: 220 13% 13%;
+```
+
+### Tailwind 使用
+
+```tsx
+// 使用语义化颜色
+<div className="bg-background text-foreground">
+<button className="bg-primary text-primary-foreground">
+
+// 使用 cn() 合并类名
+import { cn } from "@/lib/utils";
+<div className={cn("base-class", condition && "conditional-class")}>
+```
+
+## 后端 API 参考
+
+详见 `/docs/FRONTEND_API_GUIDE.md`（如果存在），主要端点：
+
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/auth/login` | POST | 用户登录 |
+| `/auth/register` | POST | 用户注册（需要 inviteCode） |
+| `/auth/me` | GET | 获取当前用户 |
+| `/conversations` | GET/POST | 会话列表/创建 |
+| `/conversations/:cid` | GET/DELETE | 会话详情/删除 |
+| `/context` | GET | 获取 Context 文件列表 |
+| `/context/upload` | POST | 上传 Context 文件 |
+| `/context/:id/content` | GET | 获取文件内容 |
+| `/context/:id/chunks` | GET | 获取文件分块 |
+| `/context/:id/download` | GET | 下载原始文件 |
+| `/settings` | GET/PUT | 用户设置 |
+
+## 开发规范
+
+### 1. 组件命名
+- 使用 PascalCase：`ChatMessage.tsx`
+- 导出与文件名一致：`export function ChatMessage()`
+
+### 2. Hook 命名
+- 使用 `use` 前缀：`useChat`, `useStream`
+- 放在 `src/hooks/` 目录
+
+### 3. 类型定义
+- 接口使用 `interface`
+- 类型别名使用 `type`
+- 导出所有公共类型
+
+### 4. 错误处理
+- API 错误通过 `toast` 显示
+- 使用 `try/catch` 包装异步操作
+
+### 5. 状态管理
+- 局部状态用 `useState`
+- 共享状态用 Context + Provider
+- 服务端数据用 SWR
+
+## 待开发功能
+
+根据 `FRONTEND_API_GUIDE.md`，以下功能可能需要实现：
+
+1. **OAuth 登录** - Google/GitHub 第三方登录
+2. **密码重置** - 忘记密码流程
+3. **用户资料编辑** - 头像、名称修改
+4. **会话搜索** - 搜索历史会话
+5. **消息搜索** - 在会话内搜索
+6. **文件编辑器** - 编辑生成的文件
+7. **Diff 视图** - 显示文件变更
+8. **Token 使用统计面板** - 详细的使用量分析
+9. **管理员功能** - 用户管理、系统配置
+
+## 常见问题
+
+### Q: 如何添加新页面？
+在 `src/app/` 下创建目录和 `page.tsx`，Next.js 会自动路由。
+
+### Q: 如何添加新的 UI 组件？
+使用 shadcn CLI：`npx shadcn-ui@latest add <component>`
+
+### Q: 如何处理认证？
+使用 `useAuth()` hook，未登录会自动重定向到 `/login`。
+
+### Q: 如何添加新的 API 端点？
+在 `src/lib/api/client.ts` 的 `ApiClient` 类中添加方法。
+

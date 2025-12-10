@@ -1,0 +1,62 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <rect width="1200" height="630" fill="url(#ogBgGradient)"/>
+  
+  <!-- Decorative circuit pattern background -->
+  <g opacity="0.1">
+    <circle cx="100" cy="100" r="200" stroke="#5eead4" stroke-width="1" fill="none"/>
+    <circle cx="1100" cy="530" r="250" stroke="#5eead4" stroke-width="1" fill="none"/>
+    <circle cx="800" cy="50" r="150" stroke="#5eead4" stroke-width="1" fill="none"/>
+    <line x1="0" y1="315" x2="300" y2="315" stroke="#5eead4" stroke-width="1"/>
+    <line x1="900" y1="315" x2="1200" y2="315" stroke="#5eead4" stroke-width="1"/>
+  </g>
+  
+  <!-- Logo -->
+  <g transform="translate(450, 140)">
+    <circle cx="150" cy="150" r="120" stroke="url(#ogLogoGradient1)" stroke-width="10" fill="none"/>
+    <circle cx="150" cy="150" r="75" fill="url(#ogLogoGradient2)"/>
+    <circle cx="150" cy="150" r="38" fill="#0f1f1f"/>
+    
+    <!-- Circuit dots -->
+    <circle cx="150" cy="125" r="6" fill="#5eead4"/>
+    <circle cx="175" cy="150" r="5" fill="#5eead4"/>
+    <circle cx="150" cy="175" r="6" fill="#5eead4"/>
+    <circle cx="125" cy="150" r="5" fill="#5eead4"/>
+    
+    <!-- Connecting lines -->
+    <line x1="150" y1="125" x2="150" y2="105" stroke="#5eead4" stroke-width="3"/>
+    <line x1="175" y1="150" x2="195" y2="150" stroke="#5eead4" stroke-width="3"/>
+    <line x1="150" y1="175" x2="150" y2="195" stroke="#5eead4" stroke-width="3"/>
+    <line x1="125" y1="150" x2="105" y2="150" stroke="#5eead4" stroke-width="3"/>
+    
+    <!-- Highlight arc -->
+    <path d="M 90 105 Q 105 75 150 67" stroke="#5eead4" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.7"/>
+  </g>
+  
+  <!-- Text: SeenOS -->
+  <text x="600" y="480" text-anchor="middle" fill="#f3f4f6" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700">
+    SeenOS
+  </text>
+  
+  <!-- Tagline -->
+  <text x="600" y="540" text-anchor="middle" fill="#9ca3af" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="400">
+    AI-Powered Agent Platform
+  </text>
+  
+  <defs>
+    <linearGradient id="ogBgGradient" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f0f0f"/>
+      <stop offset="50%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#0f1f1f"/>
+    </linearGradient>
+    <linearGradient id="ogLogoGradient1" x1="30" y1="30" x2="270" y2="270" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5eead4"/>
+      <stop offset="100%" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <linearGradient id="ogLogoGradient2" x1="75" y1="75" x2="225" y2="225" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="50%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0d5751"/>
+    </linearGradient>
+  </defs>
+</svg>

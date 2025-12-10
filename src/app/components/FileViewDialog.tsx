@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useCallback, useState, useEffect } from "react";
-import { FileText, Copy, Download, Edit, Save, X, Loader2, Plus, Trash2, Table, Code } from "lucide-react";
+import { FileText, Copy, Download, Edit, Save, X, Loader2, Plus, Trash2, Table, Code, GitCompare } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -208,6 +208,153 @@ const CSVTableView = React.memo<{
 
 CSVTableView.displayName = "CSVTableView";
 
+// 简单的 diff 行类型
+type DiffLineType = "unchanged" | "added" | "removed";
+
+interface DiffLine {
+  type: DiffLineType;
+  content: string;
+  oldLineNumber?: number;
+  newLineNumber?: number;
+}
+
+// 简单的行级 diff 算法
+function computeLineDiff(oldContent: string, newContent: string): DiffLine[] {
+  const oldLines = oldContent.split("\n");
+  const newLines = newContent.split("\n");
+
+  const m = oldLines.length;
+  const n = newLines.length;
+
+  // 构建 LCS 表
+  const dp: number[][] = Array(m + 1)
+    .fill(null)
+    .map(() => Array(n + 1).fill(0));
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (oldLines[i - 1] === newLines[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // 回溯构建 diff
+  let i = m;
+  let j = n;
+  const tempResult: DiffLine[] = [];
+
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+      tempResult.unshift({
+        type: "unchanged",
+        content: oldLines[i - 1],
+        oldLineNumber: i,
+        newLineNumber: j,
+      });
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      tempResult.unshift({
+        type: "added",
+        content: newLines[j - 1],
+        newLineNumber: j,
+      });
+      j--;
+    } else if (i > 0) {
+      tempResult.unshift({
+        type: "removed",
+        content: oldLines[i - 1],
+        oldLineNumber: i,
+      });
+      i--;
+    }
+  }
+
+  return tempResult;
+}
+
+// Diff 视图组件
+const DiffView = React.memo<{
+  oldContent: string;
+  newContent: string;
+  lineStart?: number;
+  lineEnd?: number;
+}>(({ oldContent, newContent, lineStart, lineEnd }) => {
+  const diffLines = useMemo(() => {
+    return computeLineDiff(oldContent, newContent);
+  }, [oldContent, newContent]);
+
+  const stats = useMemo(() => {
+    const added = diffLines.filter((l) => l.type === "added").length;
+    const removed = diffLines.filter((l) => l.type === "removed").length;
+    return { added, removed };
+  }, [diffLines]);
+
+  return (
+    <div className="rounded-lg border border-gray-200 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-gray-100 px-4 py-2 border-b border-gray-200">
+        <div className="flex items-center gap-4 text-xs">
+          <span className="text-green-600 font-medium">+{stats.added} additions</span>
+          <span className="text-red-600 font-medium">-{stats.removed} deletions</span>
+        </div>
+        {lineStart && lineEnd && (
+          <span className="text-xs text-gray-500">
+            Lines {lineStart}-{lineEnd}
+          </span>
+        )}
+      </div>
+      
+      {/* Diff content */}
+      <div className="font-mono text-xs overflow-auto max-h-[500px]">
+        {diffLines.map((line, index) => (
+          <div
+            key={index}
+            className={`flex ${
+              line.type === "added"
+                ? "bg-green-50"
+                : line.type === "removed"
+                ? "bg-red-50"
+                : ""
+            }`}
+          >
+            {/* 行号 */}
+            <div className="flex w-20 flex-shrink-0 select-none border-r border-gray-200 bg-gray-50 text-gray-400">
+              <span className="w-10 px-2 py-0.5 text-right">
+                {line.oldLineNumber || ""}
+              </span>
+              <span className="w-10 px-2 py-0.5 text-right border-l border-gray-200">
+                {line.newLineNumber || ""}
+              </span>
+            </div>
+            {/* 变更标记 */}
+            <div
+              className={`w-6 flex-shrink-0 select-none py-0.5 text-center font-bold ${
+                line.type === "added"
+                  ? "text-green-600 bg-green-100"
+                  : line.type === "removed"
+                  ? "text-red-600 bg-red-100"
+                  : "text-transparent"
+              }`}
+            >
+              {line.type === "added" ? "+" : line.type === "removed" ? "-" : " "}
+            </div>
+            {/* 内容 */}
+            <pre className="flex-1 overflow-x-auto px-2 py-0.5 whitespace-pre text-gray-800">
+              {line.content || " "}
+            </pre>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+DiffView.displayName = "DiffView";
+
 const LANGUAGE_MAP: Record<string, string> = {
   js: "javascript",
   jsx: "javascript",
@@ -254,7 +401,10 @@ export const FileViewDialog = React.memo<{
   const [fileName, setFileName] = useState(String(file?.path || ""));
   const [fileContent, setFileContent] = useState(String(file?.content || ""));
   const [csvData, setCsvData] = useState<string[][]>([]);
-  const [viewMode, setViewMode] = useState<'table' | 'raw'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'raw' | 'diff'>('table');
+  
+  // 检查是否有 diff 数据
+  const hasDiff = !!file?.oldContent;
 
   const fileUpdate = useSWRMutation(
     { kind: "files-update", fileName, fileContent },
@@ -276,6 +426,14 @@ export const FileViewDialog = React.memo<{
     const ext = String(file?.path || "").split(".").pop()?.toLowerCase();
     if (ext === 'csv') {
       setCsvData(parseCSV(String(file?.content || "")));
+    }
+    // 如果有 diff 数据，默认显示 diff 视图
+    if (file?.oldContent) {
+      setViewMode('diff');
+    } else if (ext === 'csv') {
+      setViewMode('table');
+    } else {
+      setViewMode('raw');
     }
   }, [file]);
 
@@ -353,7 +511,7 @@ export const FileViewDialog = React.memo<{
       open={true}
       onOpenChange={onClose}
     >
-      <DialogContent className="flex h-[80vh] max-h-[80vh] min-w-[60vw] flex-col p-6">
+      <DialogContent className="flex h-[80vh] max-h-[80vh] min-w-[60vw] flex-col p-6" showCloseButton={false}>
         <DialogTitle className="sr-only">
           {file?.path || "New File"}
         </DialogTitle>
@@ -375,18 +533,31 @@ export const FileViewDialog = React.memo<{
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            {/* CSV 视图切换按钮 */}
-            {isCSV && !isEditingMode && (
+            {/* 视图切换按钮 */}
+            {!isEditingMode && (hasDiff || isCSV) && (
               <div className="mr-2 flex rounded-md border border-gray-300 bg-white">
-                <Button
-                  onClick={() => setViewMode('table')}
-                  variant="ghost"
-                  size="sm"
-                  className={`h-8 rounded-r-none px-3 text-gray-600 hover:bg-gray-100 ${viewMode === 'table' ? 'bg-teal-50 text-teal-700' : ''}`}
-                >
-                  <Table size={16} className="mr-1" />
-                  Table
-                </Button>
+                {hasDiff && (
+                  <Button
+                    onClick={() => setViewMode('diff')}
+                    variant="ghost"
+                    size="sm"
+                    className={`h-8 px-3 text-gray-600 hover:bg-gray-100 ${viewMode === 'diff' ? 'bg-teal-50 text-teal-700' : ''} ${isCSV ? '' : 'rounded-r-none'}`}
+                  >
+                    <GitCompare size={16} className="mr-1" />
+                    Diff
+                  </Button>
+                )}
+                {isCSV && (
+                  <Button
+                    onClick={() => setViewMode('table')}
+                    variant="ghost"
+                    size="sm"
+                    className={`h-8 px-3 text-gray-600 hover:bg-gray-100 ${viewMode === 'table' ? 'bg-teal-50 text-teal-700' : ''} ${hasDiff ? 'border-l border-gray-300' : 'rounded-r-none'}`}
+                  >
+                    <Table size={16} className="mr-1" />
+                    Table
+                  </Button>
+                )}
                 <Button
                   onClick={() => setViewMode('raw')}
                   variant="ghost"
@@ -439,6 +610,15 @@ export const FileViewDialog = React.memo<{
                 </Button>
               </>
             )}
+            {/* Close Button */}
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="sm"
+              className="ml-2 h-8 w-8 p-0 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+            >
+              <X size={18} />
+            </Button>
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">
@@ -465,7 +645,15 @@ export const FileViewDialog = React.memo<{
             <ScrollArea className="h-full rounded-md bg-gray-50">
               <div className="p-4">
                 {fileContent ? (
-                  isMarkdown ? (
+                  viewMode === 'diff' && hasDiff ? (
+                    // Diff 视图
+                    <DiffView
+                      oldContent={file?.oldContent || ""}
+                      newContent={fileContent}
+                      lineStart={file?.lineStart}
+                      lineEnd={file?.lineEnd}
+                    />
+                  ) : isMarkdown && viewMode === 'raw' ? (
                     <div className="rounded-md p-6">
                       <MarkdownContent content={fileContent} />
                     </div>

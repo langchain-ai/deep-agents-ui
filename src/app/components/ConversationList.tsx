@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
-import { Loader2, MessageSquare, X, Trash2 } from "lucide-react";
+import { Loader2, MessageSquare, X, Trash2, Pencil, Check } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -18,8 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useConversations, type ConversationItem, useDeleteConversation } from "@/app/hooks/useConversations";
+import { useConversations, type ConversationItem, useDeleteConversation } from "@/hooks/useConversations";
 import { useAuth } from "@/providers/AuthProvider";
+import { apiClient } from "@/lib/api/client";
 import type { Conversation } from "@/app/types/types";
 
 type StatusFilter = "all" | "idle" | "busy" | "interrupted" | "error";
@@ -33,14 +35,14 @@ const GROUP_LABELS = {
 } as const;
 
 const STATUS_COLORS: Record<Conversation["status"], string> = {
-  idle: "bg-green-500",
-  busy: "bg-blue-500",
-  interrupted: "bg-orange-500",
-  error: "bg-red-600",
+  idle: "bg-green-500 dark:bg-green-400",
+  busy: "bg-blue-500 dark:bg-blue-400",
+  interrupted: "bg-orange-500 dark:bg-orange-400",
+  error: "bg-red-600 dark:bg-red-400",
 };
 
 function getStatusColor(status: Conversation["status"]): string {
-  return STATUS_COLORS[status] ?? "bg-gray-400";
+  return STATUS_COLORS[status] ?? "bg-muted-foreground";
 }
 
 function formatTime(date: Date, now = new Date()): string {
@@ -80,7 +82,7 @@ function StatusFilterItem({
 function ErrorState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
-      <p className="text-sm text-red-600">Failed to load conversations</p>
+      <p className="text-sm text-destructive">Failed to load conversations</p>
       <p className="mt-1 text-xs text-muted-foreground">{message}</p>
     </div>
   );
@@ -99,7 +101,7 @@ function LoadingState() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
-      <MessageSquare className="mb-2 h-12 w-12 text-gray-300" />
+      <MessageSquare className="mb-2 h-12 w-12 text-muted-foreground/50" />
       <p className="text-sm text-muted-foreground">No conversations found</p>
     </div>
   );
@@ -119,6 +121,12 @@ export function ConversationList({
   const [currentCid] = useQueryState("cid");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // 编辑标题状态
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   // 从 AuthProvider 获取认证状态
   const { token, isAuthenticated } = useAuth();
@@ -220,11 +228,71 @@ export function ConversationList({
     [deletingId, deleteConversation, mutate]
   );
 
+  // Handle edit title
+  const handleStartEdit = useCallback(
+    (e: React.MouseEvent, conv: ConversationItem) => {
+      e.stopPropagation();
+      setEditingId(conv.cid);
+      setEditingTitle(conv.title);
+      // 聚焦输入框
+      setTimeout(() => {
+        editInputRef.current?.focus();
+        editInputRef.current?.select();
+      }, 0);
+    },
+    []
+  );
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingId(null);
+    setEditingTitle("");
+  }, []);
+
+  const handleSaveTitle = useCallback(
+    async (e?: React.MouseEvent | React.FormEvent) => {
+      e?.stopPropagation();
+      e?.preventDefault();
+      
+      if (!editingId || isSavingTitle) return;
+      
+      const trimmedTitle = editingTitle.trim();
+      if (!trimmedTitle) {
+        handleCancelEdit();
+        return;
+      }
+
+      setIsSavingTitle(true);
+      try {
+        await apiClient.updateConversation(editingId, { title: trimmedTitle });
+        mutate();
+        setEditingId(null);
+        setEditingTitle("");
+      } catch (error) {
+        console.error("Failed to update conversation title:", error);
+      } finally {
+        setIsSavingTitle(false);
+      }
+    },
+    [editingId, editingTitle, isSavingTitle, mutate, handleCancelEdit]
+  );
+
+  const handleEditKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSaveTitle();
+      } else if (e.key === "Escape") {
+        handleCancelEdit();
+      }
+    },
+    [handleSaveTitle, handleCancelEdit]
+  );
+
   return (
     <div className="absolute inset-0 flex flex-col">
       {/* Header */}
       <div className="grid flex-shrink-0 grid-cols-[1fr_auto] items-center gap-3 border-b border-border p-4">
-        <h2 className="text-lg font-semibold tracking-tight">Conversations</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">Conversations</h2>
         <div className="flex items-center gap-2">
           <Select
             value={statusFilter}
@@ -283,73 +351,156 @@ export function ConversationList({
         {!error && !isLoading && isEmpty && <EmptyState />}
 
         {!error && !isEmpty && (
-          <div className="box-border w-full max-w-full overflow-hidden p-2">
+          <div className="w-full px-3 py-2">
             {(Object.keys(GROUP_LABELS) as Array<keyof typeof GROUP_LABELS>).map(
               (group) => {
                 const groupConversations = grouped[group];
                 if (groupConversations.length === 0) return null;
 
                 return (
-                  <div key={group} className="mb-4">
-                    <h4 className="m-0 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <div key={group} className="mb-5">
+                    <h4 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                       {GROUP_LABELS[group]}
                     </h4>
-                    <div className="flex flex-col gap-1">
-                      {groupConversations.map((conv) => (
-                        <button
-                          key={conv.cid}
-                          type="button"
-                          onClick={() => onSelect(conv.cid)}
-                          className={cn(
-                            "group grid w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors duration-200",
-                            "hover:bg-accent",
-                            currentCid === conv.cid
-                              ? "border border-primary bg-accent hover:bg-accent"
-                              : "border border-transparent bg-transparent"
-                          )}
-                          aria-current={currentCid === conv.cid}
-                        >
-                          <div className="min-w-0 flex-1">
-                            {/* Title + Timestamp Row */}
-                            <div className="mb-1 flex items-center justify-between">
-                              <h3 className="truncate text-sm font-semibold">
-                                {conv.title}
-                              </h3>
-                              <div className="ml-2 flex items-center gap-2">
-                                <span className="flex-shrink-0 text-xs text-muted-foreground">
-                                  {formatTime(conv.updatedAt)}
-                                </span>
-                                <button
-                                  onClick={(e) => handleDelete(e, conv.cid)}
-                                  disabled={deletingId === conv.cid}
-                                  className="hidden group-hover:flex items-center justify-center w-6 h-6 rounded hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
-                                  title="Delete conversation"
-                                >
-                                  {deletingId === conv.cid ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <div className="flex flex-col">
+                      {groupConversations.map((conv, index) => {
+                        const isSelected = currentCid === conv.cid;
+                        const isLast = index === groupConversations.length - 1;
+                        return (
+                          <div
+                            key={conv.cid}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => onSelect(conv.cid)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                onSelect(conv.cid);
+                              }
+                            }}
+                            className={cn(
+                              "group relative cursor-pointer px-3 py-3 text-left transition-all duration-150",
+                              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+                              !isLast && "border-b border-border/50",
+                              isSelected
+                                ? "bg-primary/8"
+                                : "hover:bg-muted/50"
+                            )}
+                            aria-current={isSelected}
+                          >
+                            {/* 选中指示器 */}
+                            {isSelected && (
+                              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary" />
+                            )}
+                            
+                            <div className="min-w-0 pl-1">
+                              {/* Title + Status Row */}
+                              <div className="mb-1.5 flex items-center justify-between gap-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  {/* 状态指示器 */}
+                                  <div
+                                    className={cn(
+                                      "h-2 w-2 flex-shrink-0 rounded-full",
+                                      getStatusColor(conv.status)
+                                    )}
+                                    title={conv.status}
+                                  />
+                                  {/* 编辑模式或显示模式 */}
+                                  {editingId === conv.cid ? (
+                                    <form 
+                                      onSubmit={handleSaveTitle}
+                                      className="flex min-w-0 flex-1 items-center gap-1"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Input
+                                        ref={editInputRef}
+                                        value={editingTitle}
+                                        onChange={(e) => setEditingTitle(e.target.value)}
+                                        onKeyDown={handleEditKeyDown}
+                                        onBlur={() => {
+                                          // 延迟取消，以便点击保存按钮时不会立即取消
+                                          setTimeout(() => {
+                                            if (!isSavingTitle) {
+                                              handleCancelEdit();
+                                            }
+                                          }, 150);
+                                        }}
+                                        className="h-7 min-w-0 flex-1 text-sm"
+                                        placeholder="Enter title..."
+                                        disabled={isSavingTitle}
+                                      />
+                                      <button
+                                        type="submit"
+                                        disabled={isSavingTitle}
+                                        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-primary hover:bg-primary/10"
+                                        title="Save"
+                                      >
+                                        {isSavingTitle ? (
+                                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                          <Check className="h-3.5 w-3.5" />
+                                        )}
+                                      </button>
+                                    </form>
                                   ) : (
-                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <h3 className={cn(
+                                      "truncate text-sm font-medium",
+                                      isSelected
+                                        ? "text-primary"
+                                        : "text-foreground"
+                                    )}>
+                                      {conv.title}
+                                    </h3>
                                   )}
-                                </button>
+                                </div>
+                                {/* 操作按钮 - 只在非编辑模式显示 */}
+                                {editingId !== conv.cid && (
+                                  <div className="flex flex-shrink-0 items-center gap-1">
+                                    <span className="text-[11px] text-muted-foreground">
+                                      {formatTime(conv.updatedAt)}
+                                    </span>
+                                    {/* 编辑按钮 */}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleStartEdit(e, conv)}
+                                      className={cn(
+                                        "flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all",
+                                        "group-hover:opacity-100",
+                                        "hover:bg-primary/10 text-muted-foreground hover:text-primary"
+                                      )}
+                                      title="Edit title"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </button>
+                                    {/* 删除按钮 */}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleDelete(e, conv.cid)}
+                                      disabled={deletingId === conv.cid}
+                                      className={cn(
+                                        "flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all",
+                                        "group-hover:opacity-100",
+                                        "hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                      )}
+                                      title="Delete conversation"
+                                    >
+                                      {deletingId === conv.cid ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            {/* Description + Status Row */}
-                            <div className="flex items-center justify-between">
-                              <p className="flex-1 truncate text-sm text-muted-foreground">
+                              {/* Description Row */}
+                              <p className="line-clamp-1 pl-4 text-xs text-muted-foreground">
                                 {conv.description}
                               </p>
-                              <div className="ml-2 flex-shrink-0">
-                                <div
-                                  className={cn(
-                                    "h-2 w-2 rounded-full",
-                                    getStatusColor(conv.status)
-                                  )}
-                                />
-                              </div>
                             </div>
                           </div>
-                        </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
