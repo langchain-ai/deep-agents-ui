@@ -48,6 +48,7 @@ export function useChat({
     onFinish: onHistoryRevalidate,
     onError: onHistoryRevalidate,
     onCreated: onHistoryRevalidate,
+    fetchStateHistory: true,
     experimental_thread: thread,
   });
 
