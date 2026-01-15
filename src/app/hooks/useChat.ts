@@ -44,6 +44,8 @@ export function useChat({
     threadId: threadId ?? null,
     onThreadId: setThreadId,
     defaultHeaders: { "x-auth-scheme": "langsmith" },
+    // Enable fetching state history when switching to existing threads
+    fetchStateHistory: true,
     // Revalidate thread list when stream finishes, errors, or creates new thread
     onFinish: onHistoryRevalidate,
     onError: onHistoryRevalidate,
