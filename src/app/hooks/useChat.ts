@@ -53,22 +53,80 @@ export function useChat({
     experimental_thread: thread,
   });
 
+  // TTL configuration for tagging_pal agent (7 days = 10080 minutes)
+  const TAGGING_PAL_TTL_MINUTES = 10080;
+  const isTaggingPalAgent =
+    activeAssistant?.graph_id === "tagging_pal" ||
+    activeAssistant?.assistant_id?.includes("tagging_pal");
+
   const sendMessage = useCallback(
-    (content: string) => {
+    async (content: string) => {
       const newMessage: Message = { id: uuidv4(), type: "human", content };
-      stream.submit(
-        { messages: [newMessage] },
-        {
-          optimisticValues: (prev) => ({
-            messages: [...(prev.messages ?? []), newMessage],
-          }),
-          config: { ...(activeAssistant?.config ?? {}), recursion_limit: 100 },
+
+      // If no thread exists and this is tagging_pal, pre-create thread with extended TTL
+      if (!threadId && isTaggingPalAgent && client) {
+        try {
+          const newThread = await client.threads.create({
+            ttl: { strategy: "delete", ttl: TAGGING_PAL_TTL_MINUTES },
+          });
+          setThreadId(newThread.thread_id);
+
+          // Submit with the pre-created thread ID
+          stream.submit(
+            { messages: [newMessage] },
+            {
+              threadId: newThread.thread_id,
+              optimisticValues: (prev) => ({
+                messages: [...(prev.messages ?? []), newMessage],
+              }),
+              config: {
+                ...(activeAssistant?.config ?? {}),
+                recursion_limit: 100,
+              },
+            }
+          );
+        } catch (error) {
+          // Fall back to default thread creation if TTL-enabled creation fails
+          console.error("Failed to create thread with TTL, falling back:", error);
+          stream.submit(
+            { messages: [newMessage] },
+            {
+              optimisticValues: (prev) => ({
+                messages: [...(prev.messages ?? []), newMessage],
+              }),
+              config: {
+                ...(activeAssistant?.config ?? {}),
+                recursion_limit: 100,
+              },
+            }
+          );
         }
-      );
+      } else {
+        stream.submit(
+          { messages: [newMessage] },
+          {
+            optimisticValues: (prev) => ({
+              messages: [...(prev.messages ?? []), newMessage],
+            }),
+            config: {
+              ...(activeAssistant?.config ?? {}),
+              recursion_limit: 100,
+            },
+          }
+        );
+      }
       // Update thread list immediately when sending a message
       onHistoryRevalidate?.();
     },
-    [stream, activeAssistant?.config, onHistoryRevalidate]
+    [
+      stream,
+      activeAssistant?.config,
+      onHistoryRevalidate,
+      threadId,
+      isTaggingPalAgent,
+      client,
+      setThreadId,
+    ]
   );
 
   const runSingleStep = useCallback(
