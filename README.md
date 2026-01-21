@@ -62,7 +62,8 @@ You can interact with the deployment via the chat interface and can edit setting
 
 <img width="2039" height="1495" alt="Screenshot 2025-11-17 at 1 11 27 PM" src="https://github.com/user-attachments/assets/50e1b5f3-a626-4461-9ad9-90347e471e8c" />
 
-As the deepagent runs, you can see the contents of any files it creates and saves to the [StateBackend](https://docs.langchain.com/oss/python/deepagents/backends#statebackend-ephemeral), which is the default filesystem backend. 
+As the deepagent runs, you can see the contents of any files it creates and saves with:
+[StateBackend](https://docs.langchain.com/oss/python/deepagents/backends#statebackend-ephemeral), which is the default filesystem backend. 
 
 <img width="2039" height="1495" alt="Screenshot 2025-11-17 at 1 11 36 PM" src="https://github.com/user-attachments/assets/86cc6228-5414-4cf0-90f5-d206d30c005e" />
 
