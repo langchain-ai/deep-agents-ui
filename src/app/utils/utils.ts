@@ -6,28 +6,72 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Type guard: Check if content item is a text object
+ */
+function isTextContentObject(
+  item: unknown
+): item is { type: string; text: string } {
+  return (
+    typeof item === "object" &&
+    item !== null &&
+    "type" in item &&
+    "text" in item &&
+    (item as Record<string, unknown>).type === "text" &&
+    typeof (item as Record<string, unknown>).text === "string"
+  );
+}
+
+/**
+ * Type guard: Check if content item is a plain string
+ */
+function isStringContent(item: unknown): item is string {
+  return typeof item === "string";
+}
+
 export function extractStringFromMessageContent(message: Message): string {
-  return typeof message.content === "string"
-    ? message.content
-    : Array.isArray(message.content)
-    ? message.content
-        .filter(
-          (c: unknown) =>
-            (typeof c === "object" &&
-              c !== null &&
-              "type" in c &&
-              (c as { type: string }).type === "text") ||
-            typeof c === "string"
-        )
-        .map((c: unknown) =>
-          typeof c === "string"
-            ? c
-            : typeof c === "object" && c !== null && "text" in c
-            ? (c as { text?: string }).text || ""
-            : ""
-        )
-        .join("")
-    : "";
+  // Handle simple string content
+  if (typeof message.content === "string") {
+    return message.content;
+  }
+
+  // Handle array content
+  if (Array.isArray(message.content)) {
+    const textParts: string[] = [];
+
+    for (const item of message.content) {
+      // Handle plain strings
+      if (isStringContent(item)) {
+        textParts.push(item);
+        continue;
+      }
+
+      // Handle text objects
+      if (isTextContentObject(item)) {
+        textParts.push(item.text);
+        continue;
+      }
+
+      // Log unhandled types for debugging (optional, can be removed in production)
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "[extractStringFromMessageContent] Skipping unknown content type:",
+          item
+        );
+      }
+    }
+
+    return textParts.join("");
+  }
+
+  // Fallback for unexpected content types
+  if (process.env.NODE_ENV === "development" && message.content) {
+    console.warn(
+      "[extractStringFromMessageContent] Unexpected content type:",
+      typeof message.content
+    );
+  }
+  return "";
 }
 
 export function extractSubAgentContent(data: unknown): string {
@@ -94,16 +138,23 @@ export function formatMessageForLLM(message: Message): string {
   } else if (Array.isArray(message.content)) {
     const textParts: string[] = [];
 
-    message.content.forEach((part: any) => {
-      if (typeof part === "string") {
+    for (const part of message.content) {
+      // Handle plain strings
+      if (isStringContent(part)) {
         textParts.push(part);
-      } else if (part && typeof part === "object" && part.type === "text") {
-        textParts.push(part.text || "");
+        continue;
       }
-      // Ignore other types like tool_use in content - we handle tool calls separately
-    });
 
-    contentText = textParts.join("\n\n").trim();
+      // Handle text objects
+      if (isTextContentObject(part)) {
+        textParts.push(part.text);
+        continue;
+      }
+
+      // Ignore other types like tool_use in content - we handle tool calls separately
+    }
+
+    contentText = textParts.join("").trim();
   }
 
   // For tool messages, include additional tool metadata
