@@ -2,6 +2,7 @@ import useSWRInfinite from "swr/infinite";
 import type { Thread } from "@langchain/langgraph-sdk";
 import { Client } from "@langchain/langgraph-sdk";
 import { getConfig } from "@/lib/config";
+import { extractStringFromMessageContent } from "@/app/utils/utils";
 
 export interface ThreadItem {
   id: string;
@@ -96,20 +97,18 @@ export function useThreads(props: {
               (m: any) => m.type === "human"
             );
             if (firstHumanMessage?.content) {
-              const content =
-                typeof firstHumanMessage.content === "string"
-                  ? firstHumanMessage.content
-                  : firstHumanMessage.content[0]?.text || "";
+              const content = extractStringFromMessageContent(
+                firstHumanMessage as any
+              );
               title = content.slice(0, 50) + (content.length > 50 ? "..." : "");
             }
             const firstAiMessage = values.messages.find(
               (m: any) => m.type === "ai"
             );
             if (firstAiMessage?.content) {
-              const content =
-                typeof firstAiMessage.content === "string"
-                  ? firstAiMessage.content
-                  : firstAiMessage.content[0]?.text || "";
+              const content = extractStringFromMessageContent(
+                firstAiMessage as any
+              );
               description = content.slice(0, 100);
             }
           }
