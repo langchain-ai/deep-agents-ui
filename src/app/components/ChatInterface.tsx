@@ -154,12 +154,10 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
         uploadedFiles.forEach((file) => {
           const isImage = file.mimeType.startsWith('image/');
           contentBlocks.push({
-            type: isImage ? 'image' : 'document',
-            source: {
-              type: 'base64',
-              media_type: file.mimeType,
-              data: file.data,
-            },
+            type: isImage ? 'image' : 'file',
+            source_type: 'base64',
+            data: file.data,
+            mime_type: file.mimeType,
           });
         });
 
