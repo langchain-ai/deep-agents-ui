@@ -48,7 +48,7 @@
     "swr": "^2.3.6",
     "tailwind-merge": "^2.6",
     "use-stick-to-bottom": "^1.1.1",
-    "uuid": "^9.0.1"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
