@@ -494,10 +494,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@langchain/core@^1.1.8":
-  version "1.1.8"
-  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-1.1.8.tgz#d6fc8f0ea944c71af1dfb0a960647c2d9e9ae50f"
-  integrity sha512-kIUidOgc0ZdyXo4Ahn9Zas+OayqOfk4ZoKPi7XaDipNSWSApc2+QK5BVcjvwtzxstsNOrmXJiJWEN6WPF/MvAw==
+"@langchain/core@^1.1.19":
+  version "1.1.19"
+  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-1.1.19.tgz#2fc469feba031c9b6a6f2554512259fdc9b0ed69"
+  integrity sha512-hmNAcgeLLqNLnu8UK+HVTfB8170eCmAfsy4gFLBYeE+kdsnyO0Hd/Kd42pZi8Cgfux4OMX3yxl+g+/a1ktGe0A==
   dependencies:
     "@cfworker/json-schema" "^4.0.2"
     ansi-styles "^5.0.0"
