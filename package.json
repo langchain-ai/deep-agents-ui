@@ -13,7 +13,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@langchain/core": "^1.1.1",
+    "@langchain/core": "^1.1.8",
     "@langchain/langgraph": "^1.0.2",
     "@langchain/langgraph-sdk": "^1.0.3",
     "@radix-ui/colors": "^1.0.0",
@@ -31,11 +31,11 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^1.2.1",
     "date-fns": "^4.1.0",
-    "diff": "^8.0.2",
+    "diff": "^8.0.3",
     "js-yaml": "^4.1.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "lucide-react": "^0.539.0",
-    "next": "^16.0.7",
+    "next": "^16.1.5",
     "nuqs": "^2.4.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
