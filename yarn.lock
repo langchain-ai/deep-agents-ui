@@ -3777,10 +3777,10 @@ normalize-path@^3.0.0, normalize-path@~3.0.0:
   resolved "https://registry.yarnpkg.com/normalize-path/-/normalize-path-3.0.0.tgz#0dcd69ff23a1c9b11fd0978316644a0388216a65"
   integrity sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==
 
-nuqs@^2.4.1:
-  version "2.8.2"
-  resolved "https://registry.yarnpkg.com/nuqs/-/nuqs-2.8.2.tgz#720e9a9673174104c93eba965efcb0000d8909e1"
-  integrity sha512-KMb6gmUJaLVRw+SbKUmBTo0IWLGU2s1Z4Iz/N64+EIDcu6Iw51CuppgKmxZR2EW3iXaOz5LF4avGKD2wq45eqg==
+nuqs@^2.8.8:
+  version "2.8.8"
+  resolved "https://registry.yarnpkg.com/nuqs/-/nuqs-2.8.8.tgz#375be35455b1d7e1104a15ff4d840533d6c55f76"
+  integrity sha512-LF5sw9nWpHyPWzMMu9oho3r9C5DvkpmBIg4LQN78sexIzGaeRx8DWr0uy3YiFx5i2QGZN1Qqcb+OAtEVRa2bnA==
   dependencies:
     "@standard-schema/spec" "1.0.0"
 
