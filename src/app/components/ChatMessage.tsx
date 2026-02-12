@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useCallback } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, FileIcon } from "lucide-react";
 import { SubAgentIndicator } from "@/app/components/SubAgentIndicator";
 import { ToolCallBox } from "@/app/components/ToolCallBox";
 import { MarkdownContent } from "@/app/components/MarkdownContent";
@@ -9,7 +9,10 @@ import type { SubAgent, ToolCall } from "@/app/types/types";
 import { Interrupt, Message } from "@langchain/langgraph-sdk";
 import {
   extractSubAgentContent,
+  extractFileAttachmentsFromMessageContent,
+  extractImagesFromMessageContent,
   extractStringFromMessageContent,
+  extractUserTextFromMessageContent,
   getInterruptTitle,
 } from "@/app/utils/utils";
 import { cn } from "@/lib/utils";
@@ -43,9 +46,21 @@ export const ChatMessage = React.memo<ChatMessageProps>(
   }) => {
     const isUser = message.type === "human";
     const isAIMessage = message.type === "ai";
-    const messageContent = extractStringFromMessageContent(message);
+    const messageContent = isUser
+      ? extractUserTextFromMessageContent(message)
+      : extractStringFromMessageContent(message);
     const hasContent = messageContent && messageContent.trim() !== "";
     const hasToolCalls = toolCalls.length > 0;
+
+    const imageBlocks = useMemo(
+      () => (isUser ? extractImagesFromMessageContent(message) : []),
+      [isUser, message]
+    );
+    const fileAttachments = useMemo(
+      () => (isUser ? extractFileAttachmentsFromMessageContent(message) : []),
+      [isUser, message]
+    );
+    const hasAttachments = imageBlocks.length > 0 || fileAttachments.length > 0;
     const subAgents = useMemo(() => {
       return toolCalls
         .filter((toolCall: ToolCall) => {
@@ -97,7 +112,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
             isUser ? "max-w-[70%]" : "w-full"
           )}
         >
-          {(hasContent || debugMode) && (
+          {(hasContent || hasAttachments || debugMode) && (
             <div className={cn("relative flex items-end gap-0")}>
               <div
                 className={cn(
@@ -113,9 +128,46 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                 }
               >
                 {isUser ? (
-                  <p className="m-0 whitespace-pre-wrap break-words text-sm leading-relaxed">
-                    {messageContent}
-                  </p>
+                  <>
+                    {hasAttachments && (
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        {imageBlocks.map((img, idx) => (
+                          <a
+                            key={idx}
+                            href={img.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            <img
+                              src={img.url}
+                              alt={`Attachment ${idx + 1}`}
+                              className="max-h-48 max-w-full rounded-md border border-border object-contain"
+                            />
+                          </a>
+                        ))}
+                        {fileAttachments.map((file, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-1.5 rounded-md border border-border bg-background/50 px-2 py-1 text-xs"
+                          >
+                            <FileIcon
+                              size={12}
+                              className="flex-shrink-0 text-muted-foreground"
+                            />
+                            <span className="max-w-[200px] truncate font-medium">
+                              {file.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {hasContent && (
+                      <p className="m-0 whitespace-pre-wrap break-words text-sm leading-relaxed">
+                        {messageContent}
+                      </p>
+                    )}
+                  </>
                 ) : hasContent ? (
                   <MarkdownContent content={messageContent} />
                 ) : debugMode ? (

@@ -18,13 +18,20 @@ import {
   Clock,
   Circle,
   FileIcon,
+  Paperclip,
+  X,
+  ImageIcon,
+  File as FileIconLucide,
 } from "lucide-react";
 import { ChatMessage } from "@/app/components/ChatMessage";
-import type { TodoItem, ToolCall } from "@/app/types/types";
+import type { Attachment, TodoItem, ToolCall } from "@/app/types/types";
 import { Assistant, Message } from "@langchain/langgraph-sdk";
 import {
   extractStringFromMessageContent,
+  isDocumentFile,
+  isImageMimeType,
   isPreparingToCallTaskTool,
+  isTextFile,
 } from "@/app/utils/utils";
 import { v4 as uuidv4 } from "uuid";
 import { useChatContext } from "@/providers/ChatProvider";
@@ -46,6 +53,87 @@ interface ChatInterfaceProps {
   controls: React.ReactNode;
   banner?: React.ReactNode;
   skeleton: React.ReactNode;
+}
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+function readFileAsAttachment(file: File): Promise<Attachment> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    const isImage = isImageMimeType(file.type);
+    const isDocument = isDocumentFile(file.type, file.name);
+    const isText = isTextFile(file.type, file.name);
+    const makeId = () =>
+      `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    if (isImage) {
+      // Read as base64 for images - also generate a preview
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(",")[1] || "";
+        resolve({
+          id: makeId(),
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          preview: dataUrl,
+          content: base64,
+        });
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    } else if (isDocument) {
+      // Read as base64 for documents - will be uploaded to files state and parsed server-side
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(",")[1] || "";
+        resolve({
+          id: makeId(),
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          content: base64,
+          isDocument: true,
+        });
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    } else if (isText) {
+      // Read as text for text files
+      reader.onload = () => {
+        resolve({
+          id: makeId(),
+          name: file.name,
+          type: file.type || "text/plain",
+          size: file.size,
+          content: reader.result as string,
+        });
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    } else {
+      // Read as base64 for other binary files
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(",")[1] || "";
+        resolve({
+          id: makeId(),
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          content: base64,
+        });
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 const getStatusIcon = (status: TodoItem["status"], className?: string) => {
@@ -93,6 +181,9 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
     const [isWorkflowView, setIsWorkflowView] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
+    const [isDragOver, setIsDragOver] = useState(false);
     const isControlledView = typeof view !== "undefined";
     const workflowView = isControlledView
       ? view === "workflow"
@@ -127,6 +218,84 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       [inputCallbackRef]
     );
 
+    const processFiles = useCallback(async (fileList: FileList | File[]) => {
+      const files = Array.from(fileList);
+      const validFiles = files.filter((f) => {
+        if (f.size > MAX_FILE_SIZE) {
+          console.warn(`File "${f.name}" exceeds 10 MB limit, skipping.`);
+          return false;
+        }
+        return true;
+      });
+      if (validFiles.length === 0) return;
+
+      const newAttachments = await Promise.all(
+        validFiles.map(readFileAsAttachment)
+      );
+      setAttachments((prev) => [...prev, ...newAttachments]);
+    }, []);
+
+    const removeAttachment = useCallback((id: string) => {
+      setAttachments((prev) => prev.filter((a) => a.id !== id));
+    }, []);
+
+    const handleFileInputChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+          processFiles(e.target.files);
+          // Reset the input so the same file can be selected again
+          e.target.value = "";
+        }
+      },
+      [processFiles]
+    );
+
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+    }, []);
+
+    const handleDrop = useCallback(
+      (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          processFiles(e.dataTransfer.files);
+        }
+      },
+      [processFiles]
+    );
+
+    const handlePaste = useCallback(
+      (e: React.ClipboardEvent) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        const imageFiles: File[] = [];
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.kind === "file") {
+            const file = item.getAsFile();
+            if (file) {
+              imageFiles.push(file);
+            }
+          }
+        }
+        if (imageFiles.length > 0) {
+          e.preventDefault();
+          processFiles(imageFiles);
+        }
+      },
+      [processFiles]
+    );
+
     const {
       stream,
       messages,
@@ -145,6 +314,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
     } = useChatContext();
 
     const submitDisabled = isLoading || !assistant;
+    const hasAttachments = attachments.length > 0;
 
     const handleSubmit = useCallback(
       (e?: FormEvent) => {
@@ -154,7 +324,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
         if (submitDisabled) return;
 
         const messageText = input.trim();
-        if (!messageText || isLoading) return;
+        if ((!messageText && !hasAttachments) || isLoading) return;
         if (debugMode) {
           runSingleStep([
             {
@@ -164,9 +334,13 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
             },
           ]);
         } else {
-          sendMessage(messageText);
+          sendMessage(
+            messageText,
+            hasAttachments ? attachments : undefined
+          );
         }
         setInput("");
+        setAttachments([]);
       },
       [
         input,
@@ -176,6 +350,8 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
         setInput,
         runSingleStep,
         submitDisabled,
+        hasAttachments,
+        attachments,
       ]
     );
 
@@ -678,25 +854,100 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
             <form
               onSubmit={handleSubmit}
               className="flex flex-col"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFileInputChange}
+              />
+              {isDragOver && (
+                <div className="flex items-center justify-center border-b border-dashed border-primary/30 bg-primary/5 px-[18px] py-4 text-sm text-primary/60">
+                  Drop files here to attach
+                </div>
+              )}
+              {hasAttachments && (
+                <div className="flex flex-wrap gap-2 border-b border-border px-[18px] py-2">
+                  {attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="group relative flex items-center gap-1.5 rounded-lg border border-border bg-sidebar px-2 py-1.5 text-xs"
+                    >
+                      {attachment.preview ? (
+                        <img
+                          src={attachment.preview}
+                          alt={attachment.name}
+                          className="h-8 w-8 flex-shrink-0 rounded object-cover"
+                        />
+                      ) : isImageMimeType(attachment.type) ? (
+                        <ImageIcon
+                          size={14}
+                          className="flex-shrink-0 text-muted-foreground"
+                        />
+                      ) : (
+                        <FileIconLucide
+                          size={14}
+                          className="flex-shrink-0 text-muted-foreground"
+                        />
+                      )}
+                      <div className="flex min-w-0 flex-col">
+                        <span className="max-w-[120px] truncate font-medium">
+                          {attachment.name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {formatFileSize(attachment.size)}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(attachment.id)}
+                        className="ml-1 flex-shrink-0 rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        aria-label={`Remove ${attachment.name}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 placeholder={isLoading ? "Running..." : "Write your message..."}
                 className="font-inherit field-sizing-content flex-1 resize-none border-0 bg-transparent px-[18px] pb-[13px] pt-[14px] text-sm leading-7 text-primary outline-none placeholder:text-tertiary"
                 rows={1}
               />
               <div className="flex justify-between gap-2 p-3">
-                <div className="flex items-center gap-2">{controls}</div>
+                <div className="flex items-center gap-2">
+                  {controls}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    title="Attach files"
+                    aria-label="Attach files"
+                  >
+                    <Paperclip size={16} />
+                  </button>
+                </div>
 
                 <div className="flex justify-end gap-2">
                   <Button
                     type={isLoading ? "button" : "submit"}
                     variant={isLoading ? "destructive" : "default"}
                     onClick={isLoading ? stopStream : handleSubmit}
-                    disabled={!isLoading && (submitDisabled || !input.trim())}
+                    disabled={
+                      !isLoading &&
+                      (submitDisabled ||
+                        (!input.trim() && !hasAttachments))
+                    }
                   >
                     {isLoading ? (
                       <>

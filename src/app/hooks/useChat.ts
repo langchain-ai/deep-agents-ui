@@ -9,9 +9,10 @@ import {
 } from "@langchain/langgraph-sdk";
 import { v4 as uuidv4 } from "uuid";
 import type { UseStreamThread } from "@langchain/langgraph-sdk/react";
-import type { TodoItem } from "@/app/types/types";
+import type { Attachment, TodoItem } from "@/app/types/types";
 import { useClient } from "@/providers/ClientProvider";
 import { HumanResponse } from "@/app/types/inbox";
+import { isImageMimeType } from "@/app/utils/utils";
 import { useQueryState } from "nuqs";
 
 export type StateType = {
@@ -53,24 +54,114 @@ export function useChat({
   });
 
   const sendMessage = useCallback(
-    (content: string) => {
-      const newMessage: Message = { id: uuidv4(), type: "human", content };
-      stream.submit(
-        { messages: [newMessage] },
-        {
-          optimisticValues: (prev) => ({
-            messages: [...(prev.messages ?? []), newMessage],
-          }),
-          config: {
-            ...(activeAssistant?.config ?? {}),
-            recursion_limit: 1000,
-          },
+    async (content: string, attachments?: Attachment[]) => {
+      let messageContent: Message["content"];
+      const documentAttachments: Attachment[] = [];
+      const inlineAttachments: Attachment[] = [];
+
+      // Separate document attachments (to files state) from inline attachments (to message)
+      if (attachments && attachments.length > 0) {
+        for (const attachment of attachments) {
+          if (attachment.isDocument) {
+            documentAttachments.push(attachment);
+          } else {
+            inlineAttachments.push(attachment);
+          }
         }
-      );
+      }
+
+      // Build document files map for state update
+      let documentFiles: Record<string, string> | null = null;
+      if (documentAttachments.length > 0) {
+        const currentFiles = stream.values.files ?? {};
+        documentFiles = { ...currentFiles };
+        for (const doc of documentAttachments) {
+          documentFiles[`uploads/${doc.name}`] = doc.content;
+        }
+
+        // If thread exists, update state before sending message
+        if (threadId) {
+          await client.threads.updateState(threadId, {
+            values: { files: documentFiles },
+          });
+        }
+      }
+
+      const hasInlineAttachments = inlineAttachments.length > 0;
+      const hasDocumentAttachments = documentAttachments.length > 0;
+
+      if (hasInlineAttachments || hasDocumentAttachments) {
+        const contentBlocks: Array<
+          | { type: "text"; text: string }
+          | { type: "image_url"; image_url: { url: string } }
+        > = [];
+
+        // Add user text if present
+        if (content.trim()) {
+          contentBlocks.push({ type: "text", text: content });
+        }
+
+        // Add inline attachment blocks (images, text files)
+        for (const attachment of inlineAttachments) {
+          if (isImageMimeType(attachment.type)) {
+            contentBlocks.push({
+              type: "image_url",
+              image_url: {
+                url: `data:${attachment.type};base64,${attachment.content}`,
+              },
+            });
+          } else {
+            const isBinary = !attachment.type.startsWith("text/");
+            const header = isBinary
+              ? `--- File: ${attachment.name} (base64) ---`
+              : `--- File: ${attachment.name} ---`;
+            contentBlocks.push({
+              type: "text",
+              text: `${header}\n${attachment.content}`,
+            });
+          }
+        }
+
+        // Add references for document attachments
+        for (const doc of documentAttachments) {
+          contentBlocks.push({
+            type: "text",
+            text: `[Uploaded file: ${doc.name} - use parse_document_file("uploads/${doc.name}") to extract its text.]`,
+          });
+        }
+
+        messageContent = contentBlocks;
+      } else {
+        messageContent = content;
+      }
+
+      const newMessage: Message = {
+        id: uuidv4(),
+        type: "human",
+        content: messageContent,
+      };
+
+      // Include files in submit values for new threads (no threadId yet)
+      const submitValues: Record<string, unknown> = {
+        messages: [newMessage],
+      };
+      if (documentFiles && !threadId) {
+        submitValues.files = documentFiles;
+      }
+
+      stream.submit(submitValues, {
+        optimisticValues: (prev) => ({
+          messages: [...(prev.messages ?? []), newMessage],
+        }),
+        config: {
+          ...(activeAssistant?.config ?? {}),
+          recursion_limit: 1000,
+        },
+      });
       // Update thread list immediately when sending a message
       onHistoryRevalidate?.();
     },
-    [stream, activeAssistant?.config, onHistoryRevalidate]
+    [stream, activeAssistant?.config, onHistoryRevalidate, threadId, client]
   );
 
   const runSingleStep = useCallback(

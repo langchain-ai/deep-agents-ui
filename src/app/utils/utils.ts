@@ -157,6 +157,148 @@ export function formatConversationForLLM(messages: Message[]): string {
   return formattedMessages.join("\n\n---\n\n");
 }
 
+const FILE_ATTACHMENT_PREFIX = "--- File: ";
+
+export function isImageMimeType(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
+
+const TEXT_MIME_PREFIXES = ["text/", "application/json", "application/xml"];
+const TEXT_EXTENSIONS = [
+  ".txt",
+  ".md",
+  ".csv",
+  ".json",
+  ".yaml",
+  ".yml",
+  ".xml",
+  ".html",
+  ".css",
+  ".js",
+  ".jsx",
+  ".ts",
+  ".tsx",
+  ".py",
+  ".rb",
+  ".go",
+  ".rs",
+  ".java",
+  ".c",
+  ".cpp",
+  ".h",
+  ".sh",
+  ".bash",
+  ".sql",
+  ".toml",
+  ".ini",
+  ".cfg",
+  ".env",
+  ".log",
+  ".svg",
+];
+
+export function isTextFile(mimeType: string, fileName: string): boolean {
+  if (TEXT_MIME_PREFIXES.some((p) => mimeType.startsWith(p))) return true;
+  const ext = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+  return TEXT_EXTENSIONS.includes(ext);
+}
+
+const DOCUMENT_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+];
+const DOCUMENT_EXTENSIONS = [".pdf", ".doc", ".docx", ".xlsx"];
+
+export function isDocumentFile(mimeType: string, fileName: string): boolean {
+  if (DOCUMENT_MIME_TYPES.includes(mimeType)) return true;
+  const ext = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+  return DOCUMENT_EXTENSIONS.includes(ext);
+}
+
+export interface ImageBlock {
+  url: string;
+}
+
+export interface FileAttachmentBlock {
+  name: string;
+  content: string;
+  isBinary: boolean;
+}
+
+/**
+ * Extract image_url blocks from a message's content array.
+ */
+export function extractImagesFromMessageContent(message: Message): ImageBlock[] {
+  if (!Array.isArray(message.content)) return [];
+  return message.content
+    .filter(
+      (c: any) =>
+        typeof c === "object" && c !== null && c.type === "image_url"
+    )
+    .map((c: any) => {
+      const url =
+        typeof c.image_url === "string" ? c.image_url : c.image_url?.url ?? "";
+      return { url };
+    });
+}
+
+/**
+ * Extract file attachment text blocks from a message's content array.
+ * These are blocks whose text starts with "--- File: ".
+ */
+export function extractFileAttachmentsFromMessageContent(
+  message: Message
+): FileAttachmentBlock[] {
+  if (!Array.isArray(message.content)) return [];
+  return message.content
+    .filter(
+      (c: any) =>
+        typeof c === "object" &&
+        c !== null &&
+        c.type === "text" &&
+        typeof c.text === "string" &&
+        c.text.startsWith(FILE_ATTACHMENT_PREFIX)
+    )
+    .map((c: any) => {
+      const text = c.text as string;
+      // Parse "--- File: name (base64) ---\n..." or "--- File: name ---\n..."
+      const headerEnd = text.indexOf(" ---\n");
+      if (headerEnd === -1) {
+        return { name: "unknown", content: text, isBinary: false };
+      }
+      const header = text.slice(FILE_ATTACHMENT_PREFIX.length, headerEnd);
+      const isBinary = header.endsWith(" (base64)");
+      const name = isBinary
+        ? header.slice(0, -" (base64)".length)
+        : header;
+      const content = text.slice(headerEnd + " ---\n".length);
+      return { name, content, isBinary };
+    });
+}
+
+/**
+ * Extract only the user-typed text from message content, excluding file attachment blocks.
+ */
+export function extractUserTextFromMessageContent(message: Message): string {
+  if (typeof message.content === "string") return message.content;
+  if (!Array.isArray(message.content)) return "";
+  return message.content
+    .filter(
+      (c: any) =>
+        (typeof c === "object" &&
+          c !== null &&
+          c.type === "text" &&
+          typeof c.text === "string" &&
+          !c.text.startsWith(FILE_ATTACHMENT_PREFIX)) ||
+        typeof c === "string"
+    )
+    .map((c: any) => (typeof c === "string" ? c : c.text || ""))
+    .join("");
+}
+
 export function getInterruptTitle(interrupt: Interrupt): string {
   try {
     const interruptValue = (interrupt.value as any)?.[0] as HumanInterrupt;

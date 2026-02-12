@@ -33,3 +33,13 @@ export interface Thread {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string; // MIME type
+  size: number;
+  preview?: string; // data URL for image preview
+  content: string; // text content or base64
+  isDocument?: boolean; // true for pdf, doc, docx, xlsx - parsed server-side
+}
