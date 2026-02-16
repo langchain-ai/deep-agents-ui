@@ -6,7 +6,8 @@ import { getConfig, saveConfig, StandaloneConfig } from "@/lib/config";
 import { ConfigDialog } from "@/app/components/ConfigDialog";
 import { Button } from "@/components/ui/button";
 import { Assistant } from "@langchain/langgraph-sdk";
-import { ClientProvider, useClient } from "@/providers/ClientProvider";
+import { ClientProvider } from "@/providers/ClientProvider";
+import { useClient } from "@/providers/ClientContext";
 import { Settings, MessagesSquare, SquarePen } from "lucide-react";
 import {
   ResizableHandle,

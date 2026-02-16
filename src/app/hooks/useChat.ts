@@ -10,7 +10,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import type { UseStreamThread } from "@langchain/langgraph-sdk/react";
 import type { TodoItem } from "@/app/types/types";
-import { useClient } from "@/providers/ClientProvider";
+import { useClient } from "@/providers/ClientContext";
 import { useQueryState } from "nuqs";
 
 export type StateType = {
