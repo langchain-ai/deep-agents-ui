@@ -1,21 +1,21 @@
-# 🚀🧠 Deepagents UI
+# 🚀🧠 Deep Agents UI
 
-[Deepagents](https://github.com/langchain-ai/deepagents) is a simple, open source agent harness that implements a few generally useful tools, including planning (prior to task execution), computer access (giving the able access to a shell and a filesystem), and sub-agent delegation (isolated task execution). This is a UI for interacting with deepagents.
+[Deep Agents](https://github.com/langchain-ai/deepagents) is a simple, open source agent harness that implements a few generally useful tools, including planning (prior to task execution), computer access (giving the able access to a shell and a filesystem), and sub-agent delegation (isolated task execution). This is a UI for interacting with deepagents.
 
 ## 🚀 Quickstart
 
 **Install dependencies and run the app**
 
 ```bash
-$ git clone https://github.com/langchain-ai/deep-agents-ui.git
-$ cd deep-agents-ui
-$ yarn install
-$ yarn dev
+git clone https://github.com/langchain-ai/deep-agents-ui.git
+cd deep-agents-ui
+yarn install
+yarn dev
 ```
 
-**Deploy a deepagent**
+**Deploy a Deep Agent**
 
-As an example, see our [deepagents quickstart](https://github.com/langchain-ai/deepagents-quickstarts/tree/main/deep_research) repo for an example and run the `deep_research` example.
+As an example, see our [Deep Agents quickstarts](https://github.com/langchain-ai/deepagents/tree/main/examples) for examples and run the `deep_research` example.
 
 The `langgraph.json` file has the assistant ID as the key:
 
@@ -28,8 +28,8 @@ The `langgraph.json` file has the assistant ID as the key:
 Kick off the local LangGraph deployment:
 
 ```bash
-$ cd deepagents-quickstarts/deep_research
-$ langgraph dev
+cd deepagents-quickstarts/deep_research
+langgraph dev
 ```
 
 You will see the local LangGraph deployment log to terminal:
@@ -47,16 +47,16 @@ You will see the local LangGraph deployment log to terminal:
 
 You can get the Deployment URL and Assistant ID from the terminal output and `langgraph.json` file, respectively:
 
-- Deployment URL: http://127.0.1:2024
+- Deployment URL: <http://127.0.1:2024>
 - Assistant ID: `research`
 
-**Open Deepagents UI** at [http://localhost:3000](http://localhost:3000) and input the Deployment URL and Assistant ID:
+**Open Deep Agents UI** at [http://localhost:3000](http://localhost:3000) and input the Deployment URL and Assistant ID:
 
 - **Deployment URL**: The URL for the LangGraph deployment you are connecting to
 - **Assistant ID**: The ID of the assistant or agent you want to use
 - [Optional] **LangSmith API Key**: Your LangSmith API key (format: `lsv2_pt_...`). This may be required for accessing deployed LangGraph applications. You can also provide this via the `NEXT_PUBLIC_LANGSMITH_API_KEY` environment variable.
 
-**Usagee**
+**Usage**
 
 You can interact with the deployment via the chat interface and can edit settings at any time by clicking on the Settings button in the header.
 
