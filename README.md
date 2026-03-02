@@ -1,6 +1,6 @@
 # 🚀🧠 Deep Agents UI
 
-[Deep Agents](https://github.com/langchain-ai/deepagents) is a simple, open source agent harness that implements a few generally useful tools, including planning (prior to task execution), computer access (giving the able access to a shell and a filesystem), and sub-agent delegation (isolated task execution). This is a UI for interacting with deepagents.
+[Deep Agents](https://github.com/langchain-ai/deepagents) is a simple, open source agent harness that implements a few generally useful tools, including planning (prior to task execution), computer access (giving the agent access to a shell and a filesystem), and sub-agent delegation (isolated task execution). This is a UI for interacting with deepagents.
 
 ## 🚀 Quickstart
 
