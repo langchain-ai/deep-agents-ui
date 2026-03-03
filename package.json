@@ -13,6 +13,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@codemirror/lang-json": "^6.0.2",
     "@langchain/core": "^0.3.49",
     "@langchain/langgraph": "^0.2.50",
     "@langchain/langgraph-sdk": "^0.1.10",
@@ -28,11 +29,13 @@
     "@types/diff": "^5.0.3",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/uuid": "^9.0.8",
+    "@uiw/react-codemirror": "^4.25.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^1.2.1",
     "date-fns": "^4.1.0",
     "diff": "^8.0.2",
     "js-yaml": "^4.1.0",
+    "langfuse": "^3.0.0",
     "lodash": "^4.17.21",
     "lucide-react": "^0.539.0",
     "next": "15.4.6",
@@ -48,8 +51,7 @@
     "swr": "^2.3.6",
     "tailwind-merge": "^2.6",
     "use-stick-to-bottom": "^1.1.1",
-    "uuid": "^9.0.1",
-    "langfuse": "^3.0.0"
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

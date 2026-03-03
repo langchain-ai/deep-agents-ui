@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { json as jsonLang } from "@codemirror/lang-json";
+import { oneDark } from "@codemirror/theme-one-dark";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StandaloneConfig } from "@/lib/config";
+import { cn } from "@/lib/utils";
 
 interface Project {
   value: string;
@@ -59,6 +63,12 @@ export function ConfigDialog({
   const [project, setProject] = useState(
     initialConfig?.project || ""
   );
+  const [subagentModelOverrides, setSubagentModelOverrides] = useState(
+    initialConfig?.subagentModelOverrides || ""
+  );
+  const [subagentModelOverridesError, setSubagentModelOverridesError] = useState<
+    string | null
+  >(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [llmModels, setLlmModels] = useState<LLMModel[]>([]);
 
@@ -69,6 +79,8 @@ export function ConfigDialog({
       setLangsmithApiKey(initialConfig.langsmithApiKey || "");
       setLlmModelName(initialConfig.llmModelName || "openai:gpt-5.1");
       setProject(initialConfig.project || "");
+      setSubagentModelOverrides(initialConfig.subagentModelOverrides || "");
+      setSubagentModelOverridesError(null);
     }
   }, [open, initialConfig]);
 
@@ -98,12 +110,18 @@ export function ConfigDialog({
       return;
     }
 
+    if (subagentModelOverridesError) {
+      alert("Please fix the JSON in subagent model overrides before saving.");
+      return;
+    }
+
     onSave({
       deploymentUrl,
       assistantId,
       langsmithApiKey: langsmithApiKey || undefined,
       llmModelName: llmModelName || undefined,
       project: project || undefined,
+      subagentModelOverrides: subagentModelOverrides || undefined,
     });
     onOpenChange(false);
   };
@@ -173,6 +191,84 @@ export function ConfigDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="subagentModelOverrides">
+                Subagent model overrides{" "}
+                <span className="text-muted-foreground">(JSON, optional)</span>
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const model = llmModelName || "openai:gpt-5.1";
+                  const template = {
+                    "default-researcher": model,
+                    "qa-requirements-researcher": model,
+                    "ba-requirements-reviewer": model,
+                    "business-story-to-ba-specification-developer": model,
+                  };
+                  const value = JSON.stringify(template, null, 2);
+                  setSubagentModelOverrides(value);
+                  setSubagentModelOverridesError(null);
+                }}
+              >
+                Use current model for all
+              </Button>
+            </div>
+            <div
+              className={cn(
+                "w-full overflow-hidden rounded-md border text-xs font-mono",
+                subagentModelOverridesError
+                  ? "border-destructive"
+                  : "border-input",
+              )}
+            >
+              <CodeMirror
+                value={subagentModelOverrides}
+                height="140px"
+                theme={oneDark}
+                basicSetup={{ lineNumbers: false }}
+                placeholder={`{\n  "default-researcher": "openai:gpt-5.1",\n  "qa-requirements-researcher": "openai:gpt-5.1"\n}`}
+                extensions={[jsonLang()]}
+                className="w-full"
+                onChange={(value) => {
+                  setSubagentModelOverrides(value);
+                  if (!value.trim()) {
+                    setSubagentModelOverridesError(null);
+                    return;
+                  }
+                  try {
+                    const parsed = JSON.parse(value);
+                    if (
+                      !parsed ||
+                      typeof parsed !== "object" ||
+                      Array.isArray(parsed)
+                    ) {
+                      setSubagentModelOverridesError(
+                        "Value must be a JSON object (e.g. {\"default-researcher\": \"model-id\"}).",
+                      );
+                    } else {
+                      setSubagentModelOverridesError(null);
+                    }
+                  } catch {
+                    setSubagentModelOverridesError("Invalid JSON.");
+                  }
+                }}
+              />
+            </div>
+            {subagentModelOverridesError ? (
+              <p className="text-xs text-destructive">
+                {subagentModelOverridesError}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Provide a JSON object mapping research subagent names to model
+                IDs. Keys must match existing subagents.
+              </p>
+            )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="project">

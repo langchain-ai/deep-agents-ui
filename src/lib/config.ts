@@ -4,6 +4,7 @@ export interface StandaloneConfig {
   langsmithApiKey?: string;
   llmModelName?: string;
   project?: string;
+  subagentModelOverrides?: string;
 }
 
 const CONFIG_KEY = "deep-agent-config";

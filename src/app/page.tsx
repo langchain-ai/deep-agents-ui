@@ -83,6 +83,18 @@ function HomePageContent() {
     );
   }
 
+  let subagentModelsConfig: Record<string, string> | undefined;
+  if (config.subagentModelOverrides) {
+    try {
+      const parsed = JSON.parse(config.subagentModelOverrides);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        subagentModelsConfig = parsed as Record<string, string>;
+      }
+    } catch {
+      // Ignore invalid JSON; backend will behave as if no overrides were provided.
+    }
+  }
+
   const assistant: Assistant = {
     assistant_id: config.assistantId,
     graph_id: config.assistantId,
@@ -93,6 +105,9 @@ function HomePageContent() {
           configurable: {
             LLM_MODEL: config.llmModelName,
             PROJECT: config.project,
+            ...(subagentModelsConfig
+              ? { SUBAGENT_MODELS: subagentModelsConfig }
+              : {}),
           },
         }
       : {},
