@@ -13,22 +13,29 @@ interface ClientProviderProps {
   children: ReactNode;
   deploymentUrl: string;
   apiKey: string;
+  /** Authorization header from incoming request (e.g. from auth proxy). Forwarded as-is when present. */
+  authorizationHeader?: string;
 }
 
 export function ClientProvider({
   children,
   deploymentUrl,
   apiKey,
+  authorizationHeader,
 }: ClientProviderProps) {
   const client = useMemo(() => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Api-Key": apiKey,
+    };
+    if (authorizationHeader) {
+      headers["Authorization"] = authorizationHeader;
+    }
     return new Client({
       apiUrl: deploymentUrl,
-      defaultHeaders: {
-        "Content-Type": "application/json",
-        "X-Api-Key": apiKey,
-      },
+      defaultHeaders: headers,
     });
-  }, [deploymentUrl, apiKey]);
+  }, [deploymentUrl, apiKey, authorizationHeader]);
 
   const value = useMemo(() => ({ client }), [client]);
 

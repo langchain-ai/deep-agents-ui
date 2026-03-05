@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { useQueryState } from "nuqs";
 import { getConfig, saveConfig, StandaloneConfig } from "@/lib/config";
 import { ConfigDialog } from "@/app/components/ConfigDialog";
@@ -24,11 +24,22 @@ function HomePageContent() {
   const [assistantId, setAssistantId] = useQueryState("assistantId");
   const [_threadId, setThreadId] = useQueryState("threadId");
   const [sidebar, setSidebar] = useQueryState("sidebar");
+  const [authorizationHeader, setAuthorizationHeader] = useState<
+    string | undefined
+  >(undefined);
 
   const [mutateThreads, setMutateThreads] = useState<(() => void) | null>(null);
   const [interruptCount, setInterruptCount] = useState(0);
 
-  // On mount, check for saved config, otherwise show config dialog
+  useEffect(() => {
+    fetch("/api/auth/header")
+      .then((r) => r.json())
+      .then((data: { authorization: string | null }) => {
+        if (data.authorization) setAuthorizationHeader(data.authorization);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     const savedConfig = getConfig();
     if (savedConfig) {
@@ -42,7 +53,6 @@ function HomePageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // If config changes, update the assistantId
   useEffect(() => {
     if (config && !assistantId) {
       setAssistantId(config.assistantId);
@@ -128,6 +138,7 @@ function HomePageContent() {
       <ClientProvider
         deploymentUrl={config.deploymentUrl}
         apiKey={langsmithApiKey}
+        authorizationHeader={authorizationHeader}
       >
         <div className="flex h-screen flex-col">
           <header className="flex h-16 items-center justify-between border-b border-border px-6">
@@ -168,7 +179,6 @@ function HomePageContent() {
                 size="sm"
                 onClick={() => setThreadId(null)}
                 disabled={!_threadId}
-                // Make this button the same teal as used elsewhere
                 className="border-[#2F6868] bg-[#2F6868] text-white hover:bg-[#2F6868]/80"
               >
                 <SquarePen className="mr-2 h-4 w-4" />
