@@ -35,6 +35,11 @@ interface LLMModel {
   label: string;
 }
 
+interface Assistant {
+  value: string;
+  label: string;
+}
+
 interface ConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -58,7 +63,7 @@ export function ConfigDialog({
     initialConfig?.langsmithApiKey || ""
   );
   const [llmModelName, setLlmModelName] = useState(
-    initialConfig?.llmModelName || "openai:gpt-5.1"
+    initialConfig?.llmModelName
   );
   const [project, setProject] = useState(
     initialConfig?.project || ""
@@ -71,13 +76,14 @@ export function ConfigDialog({
   >(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [llmModels, setLlmModels] = useState<LLMModel[]>([]);
+  const [assistants, setAssistants] = useState<Assistant[]>([]);
 
   useEffect(() => {
     if (open && initialConfig) {
       setDeploymentUrl(initialConfig.deploymentUrl);
       setAssistantId(initialConfig.assistantId);
       setLangsmithApiKey(initialConfig.langsmithApiKey || "");
-      setLlmModelName(initialConfig.llmModelName || "openai:gpt-5.1");
+      setLlmModelName(initialConfig.llmModelName);
       setProject(initialConfig.project || "");
       setSubagentModelOverrides(initialConfig.subagentModelOverrides || "");
       setSubagentModelOverridesError(null);
@@ -93,6 +99,7 @@ export function ConfigDialog({
           const data = await response.json();
           setProjects(data.projects || []);
           setLlmModels(data.models || []);
+          setAssistants(data.assistants || []);
         }
       } catch (error) {
         console.error("Failed to load config:", error);
@@ -151,12 +158,26 @@ export function ConfigDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="assistantId">Assistant ID</Label>
-            <Input
-              id="assistantId"
-              placeholder="<assistant-id>"
+            <Select
               value={assistantId}
-              onChange={(e) => setAssistantId(e.target.value)}
-            />
+              onValueChange={setAssistantId}
+            >
+              <SelectTrigger id="assistantId">
+                <SelectValue placeholder="Select an assistant" />
+              </SelectTrigger>
+              <SelectContent>
+                {[
+                  ...assistants,
+                  ...(assistantId && !assistants.some((a) => a.value === assistantId)
+                    ? [{ value: assistantId, label: assistantId }]
+                    : []),
+                ].map((assistant) => (
+                  <SelectItem key={assistant.value} value={assistant.value}>
+                    {assistant.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="langsmithApiKey">
@@ -203,7 +224,7 @@ export function ConfigDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const model = llmModelName || "openai:gpt-5.1";
+                  const model = llmModelName;
                   const template = {
                     "default-researcher": model,
                     "qa-requirements-researcher": model,
@@ -231,7 +252,7 @@ export function ConfigDialog({
                 height="140px"
                 theme={oneDark}
                 basicSetup={{ lineNumbers: false }}
-                placeholder={`{\n  "default-researcher": "openai:gpt-5.1",\n  "qa-requirements-researcher": "openai:gpt-5.1"\n}`}
+                placeholder={`{\n  "default-researcher": "openai:gpt-5.4",\n  "qa-requirements-researcher": "openai:gpt-5.4"\n}`}
                 extensions={[jsonLang()]}
                 className="w-full"
                 onChange={(value) => {

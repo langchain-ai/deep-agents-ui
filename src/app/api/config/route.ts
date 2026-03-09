@@ -15,13 +15,20 @@ export async function GET() {
         return NextResponse.json(JSON.parse(content));
       }
       // Return empty config if neither exists
-      return NextResponse.json({ projects: [], models: [] });
+      return NextResponse.json({
+        assistants: [],
+        projects: [],
+        models: [],
+      });
     }
 
     const content = fs.readFileSync(configPath, "utf-8");
     return NextResponse.json(JSON.parse(content));
   } catch (error) {
     console.error("Error reading config:", error);
-    return NextResponse.json({ projects: [], models: [] }, { status: 500 });
+    return NextResponse.json(
+      { assistants: [], projects: [], models: [] },
+      { status: 500 }
+    );
   }
 }

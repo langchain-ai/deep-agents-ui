@@ -1,4 +1,13 @@
 {
+  "assistants": [
+    { "value": "research", "label": "research" },
+    { "value": "chat", "label": "chat" },
+    { "value": "mt_chat", "label": "mt_chat" },
+    { "value": "pure_local_chat", "label": "pure_local_chat" },
+    { "value": "sd_chat", "label": "sd_chat" },
+    { "value": "story_chat", "label": "story_chat" },
+    { "value": "qa_research", "label": "qa_research" }
+  ],
   "projects": [
     {
       "value": "MMRU",
@@ -10,13 +19,10 @@
     }
   ],
   "models": [
+
     {
-      "value": "openai:gpt-5.1",
-      "label": "openai:gpt-5.1 (default)"
-    },
-    {
-      "value": "openai:gpt-5.2",
-      "label": "openai:gpt-5.2"
+      "value": "openai:gpt-5.4",
+      "label": "openai:gpt-5.4"
     },
     {
       "value": "openai:gpt-5-mini",
