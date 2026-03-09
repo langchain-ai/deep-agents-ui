@@ -1,12 +1,12 @@
 {
   "assistants": [
-    { "value": "research", "label": "research" },
-    { "value": "chat", "label": "chat" },
-    { "value": "mt_chat", "label": "mt_chat" },
-    { "value": "pure_local_chat", "label": "pure_local_chat" },
-    { "value": "sd_chat", "label": "sd_chat" },
-    { "value": "story_chat", "label": "story_chat" },
-    { "value": "qa_research", "label": "qa_research" }
+    { "value": "research", "label": "Research Agent" },
+    { "value": "chat", "label": "Chat Agent" },
+    { "value": "mt_chat", "label": "MT Chat Agent" },
+    { "value": "pure_local_chat", "label": "Pure Local Chat Agent" },
+    { "value": "sd_chat", "label": "SD Chat Agent" },
+    { "value": "story_chat", "label": "Story Chat Agent" },
+    { "value": "qa_research", "label": "QA Research Agent" }
   ],
   "projects": [
     {

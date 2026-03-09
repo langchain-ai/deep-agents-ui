@@ -59,9 +59,6 @@ export function ConfigDialog({
   const [assistantId, setAssistantId] = useState(
     initialConfig?.assistantId || ""
   );
-  const [langsmithApiKey, setLangsmithApiKey] = useState(
-    initialConfig?.langsmithApiKey || ""
-  );
   const [llmModelName, setLlmModelName] = useState(
     initialConfig?.llmModelName
   );
@@ -82,7 +79,6 @@ export function ConfigDialog({
     if (open && initialConfig) {
       setDeploymentUrl(initialConfig.deploymentUrl);
       setAssistantId(initialConfig.assistantId);
-      setLangsmithApiKey(initialConfig.langsmithApiKey || "");
       setLlmModelName(initialConfig.llmModelName);
       setProject(initialConfig.project || "");
       setSubagentModelOverrides(initialConfig.subagentModelOverrides || "");
@@ -125,7 +121,6 @@ export function ConfigDialog({
     onSave({
       deploymentUrl,
       assistantId,
-      langsmithApiKey: langsmithApiKey || undefined,
       llmModelName: llmModelName || undefined,
       project: project || undefined,
       subagentModelOverrides: subagentModelOverrides || undefined,
@@ -180,17 +175,25 @@ export function ConfigDialog({
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="langsmithApiKey">
-              LangSmith API Key{" "}
+            <Label htmlFor="project">
+              Project{" "}
               <span className="text-muted-foreground">(Optional)</span>
             </Label>
-            <Input
-              id="langsmithApiKey"
-              type="password"
-              placeholder="lsv2_pt_..."
-              value={langsmithApiKey}
-              onChange={(e) => setLangsmithApiKey(e.target.value)}
-            />
+            <Select
+              value={project}
+              onValueChange={setProject}
+            >
+              <SelectTrigger id="project">
+                <SelectValue placeholder="Select a project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((proj) => (
+                  <SelectItem key={proj.value} value={proj.value}>
+                    {proj.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="llmModelName">
@@ -290,27 +293,6 @@ export function ConfigDialog({
                 IDs. Keys must match existing subagents.
               </p>
             )}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="project">
-              Project{" "}
-              <span className="text-muted-foreground">(Optional)</span>
-            </Label>
-            <Select
-              value={project}
-              onValueChange={setProject}
-            >
-              <SelectTrigger id="project">
-                <SelectValue placeholder="Select a project" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((proj) => (
-                  <SelectItem key={proj.value} value={proj.value}>
-                    {proj.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
         <DialogFooter>
