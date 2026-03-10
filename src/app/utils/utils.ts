@@ -204,13 +204,47 @@ export function isTextFile(mimeType: string, fileName: string): boolean {
 }
 
 const DOCUMENT_MIME_TYPES = [
+  // Office / PDF documents
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-excel",
+  // Audio files (treated as uploadable \"documents\" so they go into files state)
+  "audio/wav",
+  "audio/x-wav",
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/aac",
+  "audio/ogg",
+  "audio/flac",
+  // Video files (for meeting recordings)
+  "video/mp4",
+  "video/x-m4v",
+  "video/quicktime",
+  "video/x-msvideo",
+  "video/x-matroska",
 ];
-const DOCUMENT_EXTENSIONS = [".pdf", ".doc", ".docx", ".xlsx"];
+const DOCUMENT_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xlsx",
+  ".xls",
+  ".wav",
+  ".mp3",
+  ".m4a",
+  ".aac",
+  ".ogg",
+  ".flac",
+  ".mp4",
+  ".m4v",
+  ".mov",
+  ".avi",
+  ".mkv",
+];
 
 export function isDocumentFile(mimeType: string, fileName: string): boolean {
   if (DOCUMENT_MIME_TYPES.includes(mimeType)) return true;

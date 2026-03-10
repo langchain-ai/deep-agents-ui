@@ -55,7 +55,8 @@ interface ChatInterfaceProps {
   skeleton: React.ReactNode;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE_DEFAULT = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE_LARGE = 1024 * 1024 * 1024; // 1 GB for audio/video/doc uploads
 
 function readFileAsAttachment(file: File): Promise<Attachment> {
   return new Promise((resolve, reject) => {
@@ -218,22 +219,39 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       [inputCallbackRef]
     );
 
-    const processFiles = useCallback(async (fileList: FileList | File[]) => {
-      const files = Array.from(fileList);
-      const validFiles = files.filter((f) => {
-        if (f.size > MAX_FILE_SIZE) {
-          console.warn(`File "${f.name}" exceeds 10 MB limit, skipping.`);
-          return false;
-        }
-        return true;
-      });
-      if (validFiles.length === 0) return;
+    const processFiles = useCallback(
+      async (fileList: FileList | File[]) => {
+        const files = Array.from(fileList);
+        const validFiles = files.filter((f) => {
+          const isImage = isImageMimeType(f.type);
+          const isDoc = isDocumentFile(f.type, f.name);
+          const isTxt = isTextFile(f.type, f.name);
 
-      const newAttachments = await Promise.all(
-        validFiles.map(readFileAsAttachment)
-      );
-      setAttachments((prev) => [...prev, ...newAttachments]);
-    }, []);
+          // Allow much larger size for non-image, non-text "documents"
+          // (this includes meeting recordings: audio/video files).
+          const maxSize =
+            isDoc && !isImage && !isTxt
+              ? MAX_FILE_SIZE_LARGE
+              : MAX_FILE_SIZE_DEFAULT;
+
+          if (f.size > maxSize) {
+            const limitMb = (maxSize / (1024 * 1024)).toFixed(0);
+            console.warn(
+              `File "${f.name}" exceeds ${limitMb} MB limit for this type, skipping.`
+            );
+            return false;
+          }
+          return true;
+        });
+        if (validFiles.length === 0) return;
+
+        const newAttachments = await Promise.all(
+          validFiles.map(readFileAsAttachment)
+        );
+        setAttachments((prev) => [...prev, ...newAttachments]);
+      },
+      []
+    );
 
     const removeAttachment = useCallback((id: string) => {
       setAttachments((prev) => prev.filter((a) => a.id !== id));
@@ -861,6 +879,16 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
               <input
                 ref={fileInputRef}
                 type="file"
+                accept="
+                  image/*,
+                  .pdf,.doc,.docx,.xlsx,.xls,
+                  .txt,.md,.csv,.json,.yaml,.yml,.xml,
+                  .html,.css,.js,.jsx,.ts,.tsx,
+                  .py,.rb,.go,.rs,.java,.c,.cpp,.h,
+                  .sh,.bash,.sql,.toml,.ini,.cfg,.env,.log,.svg,
+                  .wav,.mp3,.m4a,.aac,.ogg,.flac,
+                  .mp4,.m4v,.mov,.avi,.mkv
+                "
                 multiple
                 className="hidden"
                 onChange={handleFileInputChange}

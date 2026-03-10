@@ -6,7 +6,8 @@
     { "value": "pure_local_chat", "label": "Pure Local Chat Agent" },
     { "value": "sd_chat", "label": "SD Chat Agent" },
     { "value": "story_chat", "label": "Story Chat Agent" },
-    { "value": "qa_research", "label": "QA Research Agent" }
+    { "value": "qa_research", "label": "QA Research Agent" },
+    { "value": "meeting_summary", "label": "Meeting Summary Agent" }
   ],
   "projects": [
     {
