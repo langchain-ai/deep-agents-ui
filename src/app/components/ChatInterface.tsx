@@ -605,6 +605,35 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       setInput(e.target.value);
     };
 
+    const handleInputResizeStart = (
+      e: React.MouseEvent<HTMLDivElement, MouseEvent>
+    ) => {
+      const el = textareaRef.current;
+      if (!el) return;
+
+      const startY = e.clientY;
+      const startHeight = el.offsetHeight || 0;
+
+      const onMove = (moveEvent: MouseEvent) => {
+        const delta = startY - moveEvent.clientY;
+        const minHeight = 32; // px
+        const maxHeight = 240; // px (~6+ lines)
+        const next = Math.min(
+          maxHeight,
+          Math.max(minHeight, startHeight + delta)
+        );
+        el.style.height = `${next}px`;
+      };
+
+      const onUp = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    };
+
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
         <div
@@ -942,6 +971,16 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                   ))}
                 </div>
               )}
+              {isLoading && (
+                <div className="flex items-center gap-2 px-[18px] pt-2 text-xs font-medium text-primary">
+                  <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
+                  <span>Agent is responding...</span>
+                </div>
+              )}
+              <div
+                className="mx-[18px] mt-1 h-2 cursor-row-resize"
+                onMouseDown={handleInputResizeStart}
+              />
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -949,8 +988,8 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 placeholder={isLoading ? "Running..." : "Write your message..."}
-                className="font-inherit field-sizing-content flex-1 resize-none border-0 bg-transparent px-[18px] pb-[13px] pt-[14px] text-sm leading-7 text-primary outline-none placeholder:text-tertiary"
-                rows={1}
+                className="font-inherit resize-none border-0 bg-transparent px-[18px] pb-[13px] pt-[10px] text-sm leading-7 text-primary outline-none placeholder:text-tertiary"
+                rows={2}
               />
               <div className="flex justify-between gap-2 p-3">
                 <div className="flex items-center gap-2">

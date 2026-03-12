@@ -53,6 +53,8 @@ export function ConfigDialog({
   onSave,
   initialConfig,
 }: ConfigDialogProps) {
+  const DEFAULT_LLM_MODEL_NAME = "litellm:openai/gpt-5-mini";
+
   const [deploymentUrl, setDeploymentUrl] = useState(
     initialConfig?.deploymentUrl || ""
   );
@@ -60,7 +62,7 @@ export function ConfigDialog({
     initialConfig?.assistantId || ""
   );
   const [llmModelName, setLlmModelName] = useState(
-    initialConfig?.llmModelName
+    initialConfig?.llmModelName || DEFAULT_LLM_MODEL_NAME
   );
   const [project, setProject] = useState(
     initialConfig?.project || ""
@@ -79,7 +81,7 @@ export function ConfigDialog({
     if (open && initialConfig) {
       setDeploymentUrl(initialConfig.deploymentUrl);
       setAssistantId(initialConfig.assistantId);
-      setLlmModelName(initialConfig.llmModelName);
+      setLlmModelName(initialConfig.llmModelName || DEFAULT_LLM_MODEL_NAME);
       setProject(initialConfig.project || "");
       setSubagentModelOverrides(initialConfig.subagentModelOverrides || "");
       setSubagentModelOverridesError(null);
@@ -108,7 +110,7 @@ export function ConfigDialog({
   }, [open]);
 
   const handleSave = () => {
-    if (!deploymentUrl || !assistantId) {
+    if (!deploymentUrl || !assistantId || !llmModelName) {
       alert("Please fill in all required fields");
       return;
     }
@@ -121,7 +123,7 @@ export function ConfigDialog({
     onSave({
       deploymentUrl,
       assistantId,
-      llmModelName: llmModelName || undefined,
+      llmModelName,
       project: project || undefined,
       subagentModelOverrides: subagentModelOverrides || undefined,
     });
@@ -196,10 +198,7 @@ export function ConfigDialog({
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="llmModelName">
-              LLM Model Name{" "}
-              <span className="text-muted-foreground">(Optional)</span>
-            </Label>
+            <Label htmlFor="llmModelName">LLM Model Name</Label>
             <Select
               value={llmModelName}
               onValueChange={setLlmModelName}

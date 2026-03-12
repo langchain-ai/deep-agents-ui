@@ -105,22 +105,21 @@ function HomePageContent() {
     }
   }
 
+  const defaultModelName = "litellm:openai/gpt-5-mini";
   const assistant: Assistant = {
     assistant_id: config.assistantId,
     graph_id: config.assistantId,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    config: config.llmModelName
-      ? {
-          configurable: {
-            LLM_MODEL: config.llmModelName,
-            PROJECT: config.project,
-            ...(subagentModelsConfig
-              ? { SUBAGENT_MODELS: subagentModelsConfig }
-              : {}),
-          },
-        }
-      : {},
+    config: {
+      configurable: {
+        LLM_MODEL: config.llmModelName || defaultModelName,
+        PROJECT: config.project,
+        ...(subagentModelsConfig
+          ? { SUBAGENT_MODELS: subagentModelsConfig }
+          : {}),
+      },
+    },
     metadata: {},
     version: 1,
     name: "Default Assistant",

@@ -2,7 +2,7 @@ export interface StandaloneConfig {
   deploymentUrl: string;
   assistantId: string;
   langsmithApiKey?: string;
-  llmModelName?: string;
+  llmModelName: string;
   project?: string;
   subagentModelOverrides?: string;
 }
