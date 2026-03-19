@@ -80,9 +80,9 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                       {getCodeText(codeNode).replace(/\n$/, "")}
                     </SyntaxHighlighter>
                   ) : (
-                    <code className="bg-surface block whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem]">
-                      {getCodeText(codeNode).replace(/\n$/, "")}
-                    </code>
+                    <div className="bg-surface whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem] [&_code]:bg-transparent [&_code]:p-0 [&_code]:rounded-none [&_code]:text-inherit">
+                      {children}
+                    </div>
                   )}
                 </div>
               );
