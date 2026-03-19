@@ -272,13 +272,18 @@ export function ThreadList({
     }
   }, [renamingThreadId]);
 
+  const isCancellingRef = useRef(false);
+
   const handleRenameThread = useCallback(async () => {
-    if (!renamingThreadId) return;
+    if (!renamingThreadId || isCancellingRef.current) {
+      isCancellingRef.current = false;
+      return;
+    }
     const trimmed = renameValue.trim();
     try {
       // Empty name clears custom_name, reverting to auto-derived title
       await client.threads.update(renamingThreadId, {
-        metadata: { custom_name: trimmed || "" },
+        metadata: { custom_name: trimmed },
       });
       threads.mutate();
     } catch (error) {
@@ -289,6 +294,7 @@ export function ThreadList({
   }, [renamingThreadId, renameValue, client, threads]);
 
   const cancelRenaming = useCallback(() => {
+    isCancellingRef.current = true;
     setRenamingThreadId(null);
   }, []);
 
