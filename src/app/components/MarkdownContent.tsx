@@ -59,6 +59,13 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 >
                   {String(children).replace(/\n$/, "")}
                 </SyntaxHighlighter>
+              ) : !inline ? (
+                <code
+                  className="bg-surface block whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem]"
+                  {...props}
+                >
+                  {String(children).replace(/\n$/, "")}
+                </code>
               ) : (
                 <code
                   className="bg-surface rounded-sm px-1 py-0.5 font-mono text-[0.9em]"
