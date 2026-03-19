@@ -6,7 +6,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "@/lib/utils";
-import type { Element, ElementContent, Text } from "hast";
+import type { Element, ElementContent } from "hast";
 
 interface MarkdownContentProps {
   content: string;
@@ -80,9 +80,9 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                       {getCodeText(codeNode).replace(/\n$/, "")}
                     </SyntaxHighlighter>
                   ) : (
-                    <div className="bg-surface block whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem]">
-                      {children}
-                    </div>
+                    <code className="bg-surface block whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem]">
+                      {getCodeText(codeNode).replace(/\n$/, "")}
+                    </code>
                   )}
                 </div>
               );
@@ -147,7 +147,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
 /** Extract text content from a hast element node */
 function getCodeText(node: ElementContent | Element | undefined): string {
   if (!node) return "";
-  if (node.type === "text") return (node as Text).value || "";
+  if ("value" in node) return node.value || "";
   if ("children" in node) {
     return (node.children as ElementContent[])
       .map((child) => getCodeText(child))
