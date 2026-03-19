@@ -231,16 +231,18 @@ export function ThreadList({
     onInterruptCountChange?.(interruptedCount);
   }, [interruptedCount, onInterruptCountChange]);
 
-  const handleDeleteThread = useCallback(async () => {
-    if (!threadToDelete) return;
+  const handleDeleteThread = useCallback(async (e: React.MouseEvent) => {
+    // Prevent Radix from auto-closing the dialog (which would null out
+    // threadToDelete via onOpenChange before the async operation completes).
+    e.preventDefault();
+    const thread = threadToDelete;
+    if (!thread) return;
     setIsDeleting(true);
     try {
-      await client.threads.delete(threadToDelete.id);
-      // If we deleted the currently active thread, clear the selection
-      if (currentThreadId === threadToDelete.id) {
+      await client.threads.delete(thread.id);
+      if (currentThreadId === thread.id) {
         await setCurrentThreadId(null);
       }
-      // Revalidate the thread list
       threads.mutate();
     } catch (error) {
       console.error("Failed to delete thread:", error);
@@ -381,26 +383,18 @@ export function ThreadList({
                   </h4>
                   <div className="flex flex-col gap-1">
                     {groupThreads.map((thread) => (
-                      <div
+                      <button
                         key={thread.id}
+                        type="button"
                         className={cn(
-                          "group relative grid w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors duration-200",
+                          "group grid w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors duration-200",
                           "hover:bg-accent",
                           currentThreadId === thread.id
                             ? "border border-primary bg-accent hover:bg-accent"
                             : "border border-transparent bg-transparent"
                         )}
-                        role="button"
-                        tabIndex={0}
                         onClick={() => {
                           if (renamingThreadId !== thread.id) {
-                            onThreadSelect(thread.id);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (renamingThreadId === thread.id) return;
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
                             onThreadSelect(thread.id);
                           }
                         }}
@@ -501,7 +495,7 @@ export function ThreadList({
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
