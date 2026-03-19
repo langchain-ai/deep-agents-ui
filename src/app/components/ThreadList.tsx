@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
-import { Loader2, MessageSquare, MoreHorizontal, Trash2, X } from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -145,6 +146,10 @@ export function ThreadList({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [threadToDelete, setThreadToDelete] = useState<ThreadItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [renamingThreadId, setRenamingThreadId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const isStartingRenameRef = useRef(false);
 
   const threads = useThreads({
     status: statusFilter === "all" ? undefined : statusFilter,
@@ -244,6 +249,46 @@ export function ThreadList({
       setThreadToDelete(null);
     }
   }, [threadToDelete, client, currentThreadId, setCurrentThreadId, threads]);
+
+  const startRenaming = useCallback((thread: ThreadItem) => {
+    isStartingRenameRef.current = true;
+    setRenamingThreadId(thread.id);
+    setRenameValue(thread.title);
+  }, []);
+
+  // Focus the rename input once it renders.
+  useEffect(() => {
+    if (renamingThreadId) {
+      // Use rAF to ensure the input is in the DOM after render
+      requestAnimationFrame(() => {
+        renameInputRef.current?.focus();
+        renameInputRef.current?.select();
+      });
+    }
+  }, [renamingThreadId]);
+
+  const handleRenameThread = useCallback(async () => {
+    if (!renamingThreadId) return;
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      setRenamingThreadId(null);
+      return;
+    }
+    try {
+      await client.threads.update(renamingThreadId, {
+        metadata: { custom_name: trimmed },
+      });
+      threads.mutate();
+    } catch (error) {
+      console.error("Failed to rename thread:", error);
+    } finally {
+      setRenamingThreadId(null);
+    }
+  }, [renamingThreadId, renameValue, client, threads]);
+
+  const cancelRenaming = useCallback(() => {
+    setRenamingThreadId(null);
+  }, []);
 
   return (
     <div className="absolute inset-0 flex flex-col">
@@ -347,8 +392,13 @@ export function ThreadList({
                         )}
                         role="button"
                         tabIndex={0}
-                        onClick={() => onThreadSelect(thread.id)}
+                        onClick={() => {
+                          if (renamingThreadId !== thread.id) {
+                            onThreadSelect(thread.id);
+                          }
+                        }}
                         onKeyDown={(e) => {
+                          if (renamingThreadId === thread.id) return;
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             onThreadSelect(thread.id);
@@ -359,9 +409,31 @@ export function ThreadList({
                         <div className="min-w-0 flex-1">
                           {/* Title + Timestamp Row */}
                           <div className="mb-1 flex items-center justify-between">
-                            <h3 className="truncate text-sm font-semibold">
-                              {thread.title}
-                            </h3>
+                            {renamingThreadId === thread.id ? (
+                              <input
+                                ref={renameInputRef}
+                                type="text"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                onBlur={handleRenameThread}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleRenameThread();
+                                  } else if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    cancelRenaming();
+                                  }
+                                  e.stopPropagation();
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-6 w-full truncate rounded border border-primary bg-background px-1 text-sm font-semibold outline-none"
+                              />
+                            ) : (
+                              <h3 className="truncate text-sm font-semibold">
+                                {thread.title}
+                              </h3>
+                            )}
                             <div className="ml-2 flex flex-shrink-0 items-center gap-1">
                               <span className="text-xs text-muted-foreground">
                                 {formatTime(thread.updatedAt)}
@@ -377,7 +449,29 @@ export function ThreadList({
                                     <MoreHorizontal className="h-4 w-4" />
                                   </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent
+                                  align="end"
+                                  onCloseAutoFocus={(e) => {
+                                    // Prevent Radix from restoring focus to the
+                                    // trigger when we're entering rename mode.
+                                    // The ref is set synchronously in startRenaming
+                                    // before the menu closes.
+                                    if (isStartingRenameRef.current) {
+                                      e.preventDefault();
+                                      isStartingRenameRef.current = false;
+                                    }
+                                  }}
+                                >
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startRenaming(thread);
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                    Rename
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     variant="destructive"
                                     onClick={(e) => {
