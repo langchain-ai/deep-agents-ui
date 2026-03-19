@@ -146,6 +146,7 @@ export function ThreadList({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [threadToDelete, setThreadToDelete] = useState<ThreadItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [renamingThreadId, setRenamingThreadId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -238,17 +239,19 @@ export function ThreadList({
     const thread = threadToDelete;
     if (!thread) return;
     setIsDeleting(true);
+    setDeleteError(null);
     try {
       await client.threads.delete(thread.id);
       if (currentThreadId === thread.id) {
         await setCurrentThreadId(null);
       }
       threads.mutate();
-    } catch (error) {
-      console.error("Failed to delete thread:", error);
-    } finally {
       setIsDeleting(false);
       setThreadToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete thread:", error);
+      setIsDeleting(false);
+      setDeleteError("Failed to delete thread. Please try again.");
     }
   }, [threadToDelete, client, currentThreadId, setCurrentThreadId, threads]);
 
@@ -383,18 +386,26 @@ export function ThreadList({
                   </h4>
                   <div className="flex flex-col gap-1">
                     {groupThreads.map((thread) => (
-                      <button
+                      <div
                         key={thread.id}
-                        type="button"
+                        role="listitem"
+                        tabIndex={0}
                         className={cn(
                           "group grid w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors duration-200",
-                          "hover:bg-accent",
+                          "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           currentThreadId === thread.id
                             ? "border border-primary bg-accent hover:bg-accent"
                             : "border border-transparent bg-transparent"
                         )}
                         onClick={() => {
                           if (renamingThreadId !== thread.id) {
+                            onThreadSelect(thread.id);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (renamingThreadId === thread.id) return;
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
                             onThreadSelect(thread.id);
                           }
                         }}
@@ -495,7 +506,7 @@ export function ThreadList({
                             </div>
                           </div>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -528,7 +539,10 @@ export function ThreadList({
       <AlertDialog
         open={!!threadToDelete}
         onOpenChange={(open) => {
-          if (!open) setThreadToDelete(null);
+          if (!open) {
+            setThreadToDelete(null);
+            setDeleteError(null);
+          }
         }}
       >
         <AlertDialogContent>
@@ -538,6 +552,9 @@ export function ThreadList({
               Are you sure you want to delete &ldquo;{threadToDelete?.title}&rdquo;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError && (
+            <p className="text-sm text-destructive">{deleteError}</p>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
