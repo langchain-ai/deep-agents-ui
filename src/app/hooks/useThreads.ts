@@ -87,7 +87,8 @@ export function useThreads(props: {
 
       return threads.map((thread): ThreadItem => {
         const metadata = thread.metadata as Record<string, unknown> | undefined;
-        const customName = typeof metadata?.custom_name === "string"
+        // Empty string means "cleared" — fall back to auto-derived title
+        const customName = typeof metadata?.custom_name === "string" && metadata.custom_name
           ? metadata.custom_name
           : undefined;
 
@@ -127,7 +128,7 @@ export function useThreads(props: {
           id: thread.thread_id,
           updatedAt: new Date(thread.updated_at),
           status: thread.status,
-          title: customName || title,
+          title: customName ?? title,
           description,
           assistantId,
         };

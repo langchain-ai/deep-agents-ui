@@ -275,13 +275,10 @@ export function ThreadList({
   const handleRenameThread = useCallback(async () => {
     if (!renamingThreadId) return;
     const trimmed = renameValue.trim();
-    if (!trimmed) {
-      setRenamingThreadId(null);
-      return;
-    }
     try {
+      // Empty name clears custom_name, reverting to auto-derived title
       await client.threads.update(renamingThreadId, {
-        metadata: { custom_name: trimmed },
+        metadata: { custom_name: trimmed || "" },
       });
       threads.mutate();
     } catch (error) {
@@ -424,7 +421,8 @@ export function ThreadList({
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") {
                                     e.preventDefault();
-                                    handleRenameThread();
+                                    // Blur triggers onBlur which is the single save path
+                                    e.currentTarget.blur();
                                   } else if (e.key === "Escape") {
                                     e.preventDefault();
                                     cancelRenaming();
