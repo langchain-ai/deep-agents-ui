@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "@/lib/utils";
+import type { Element, ElementContent, Text } from "hast";
 
 interface MarkdownContentProps {
   content: string;
@@ -36,14 +37,21 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 </code>
               );
             },
-            pre({ children, node }: { children?: React.ReactNode; node?: any }) {
-              // Extract language and text from the <code> child element
+            pre({ children, node }: { children?: React.ReactNode; node?: Element }) {
+              // Extract language from the <code> child's hast node
               const codeNode = node?.children?.find(
-                (child: any) => child.tagName === "code"
+                (child): child is Element =>
+                  child.type === "element" && child.tagName === "code"
               );
-              const className = codeNode?.properties?.className?.[0] || "";
-              const match = /language-(\w+)/.exec(className);
-              const text = getCodeText(codeNode);
+              const classNames = codeNode?.properties?.className;
+              const langClass =
+                Array.isArray(classNames)
+                  ? classNames.find(
+                      (cls): cls is string =>
+                        typeof cls === "string" && /^language-/.test(cls)
+                    )
+                  : undefined;
+              const match = langClass ? /language-(\w+)/.exec(langClass) : null;
 
               return (
                 <div className="my-4 max-w-full overflow-hidden last:mb-0">
@@ -69,12 +77,12 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                         fontSize: "0.875rem",
                       }}
                     >
-                      {text.replace(/\n$/, "")}
+                      {getCodeText(codeNode).replace(/\n$/, "")}
                     </SyntaxHighlighter>
                   ) : (
-                    <code className="bg-surface block whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem]">
-                      {text.replace(/\n$/, "")}
-                    </code>
+                    <div className="bg-surface block whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem]">
+                      {children}
+                    </div>
                   )}
                 </div>
               );
@@ -136,12 +144,14 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
   }
 );
 
-/** Extract text content from a hast code node */
-function getCodeText(node: any): string {
+/** Extract text content from a hast element node */
+function getCodeText(node: ElementContent | Element | undefined): string {
   if (!node) return "";
-  if (node.type === "text") return node.value || "";
-  if (node.children) {
-    return node.children.map((child: any) => getCodeText(child)).join("");
+  if (node.type === "text") return (node as Text).value || "";
+  if ("children" in node) {
+    return (node.children as ElementContent[])
+      .map((child) => getCodeText(child))
+      .join("");
   }
   return "";
 }
