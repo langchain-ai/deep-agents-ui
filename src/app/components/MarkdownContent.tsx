@@ -24,49 +24,10 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
-            code({
-              inline,
-              className,
-              children,
-              ...props
-            }: {
-              inline?: boolean;
-              className?: string;
-              children?: React.ReactNode;
-            }) {
-              const match = /language-(\w+)/.exec(className || "");
-              return !inline && match ? (
-                <SyntaxHighlighter
-                  style={oneDark}
-                  language={match[1]}
-                  PreTag="div"
-                  className="max-w-full rounded-md text-sm"
-                  wrapLines={true}
-                  wrapLongLines={true}
-                  lineProps={{
-                    style: {
-                      wordBreak: "break-all",
-                      whiteSpace: "pre-wrap",
-                      overflowWrap: "break-word",
-                    },
-                  }}
-                  customStyle={{
-                    margin: 0,
-                    maxWidth: "100%",
-                    overflowX: "auto",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  {String(children).replace(/\n$/, "")}
-                </SyntaxHighlighter>
-              ) : !inline ? (
-                <code
-                  className="bg-surface block whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem]"
-                  {...props}
-                >
-                  {String(children).replace(/\n$/, "")}
-                </code>
-              ) : (
+            // In react-markdown v9, fenced code blocks render as <pre><code>...</code></pre>.
+            // We handle block code in the `pre` component and keep `code` for inline only.
+            code({ children, ...props }) {
+              return (
                 <code
                   className="bg-surface rounded-sm px-1 py-0.5 font-mono text-[0.9em]"
                   {...props}
@@ -75,10 +36,46 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 </code>
               );
             },
-            pre({ children }: { children?: React.ReactNode }) {
+            pre({ children, node }: { children?: React.ReactNode; node?: any }) {
+              // Extract language and text from the <code> child element
+              const codeNode = node?.children?.find(
+                (child: any) => child.tagName === "code"
+              );
+              const className = codeNode?.properties?.className?.[0] || "";
+              const match = /language-(\w+)/.exec(className);
+              const text = getCodeText(codeNode);
+
               return (
                 <div className="my-4 max-w-full overflow-hidden last:mb-0">
-                  {children}
+                  {match ? (
+                    <SyntaxHighlighter
+                      style={oneDark}
+                      language={match[1]}
+                      PreTag="div"
+                      className="max-w-full rounded-md text-sm"
+                      wrapLines={true}
+                      wrapLongLines={true}
+                      lineProps={{
+                        style: {
+                          wordBreak: "break-all",
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "break-word",
+                        },
+                      }}
+                      customStyle={{
+                        margin: 0,
+                        maxWidth: "100%",
+                        overflowX: "auto",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {text.replace(/\n$/, "")}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code className="bg-surface block whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem]">
+                      {text.replace(/\n$/, "")}
+                    </code>
+                  )}
                 </div>
               );
             },
@@ -138,5 +135,15 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
     );
   }
 );
+
+/** Extract text content from a hast code node */
+function getCodeText(node: any): string {
+  if (!node) return "";
+  if (node.type === "text") return node.value || "";
+  if (node.children) {
+    return node.children.map((child: any) => getCodeText(child)).join("");
+  }
+  return "";
+}
 
 MarkdownContent.displayName = "MarkdownContent";
