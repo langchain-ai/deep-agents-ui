@@ -7,6 +7,7 @@
     { "value": "sd_chat", "label": "SD Chat Agent" },
     { "value": "story_chat", "label": "Story Chat Agent" },
     { "value": "qa_research", "label": "QA Research Agent" },
+    { "value": "spec_research", "label": "Spec Research Agent" },
     { "value": "meeting_summary", "label": "Meeting Summary Agent" }
   ],
   "projects": [
@@ -32,10 +33,6 @@
     {
       "value": "anthropic:claude-sonnet-4-5-20250929",
       "label": "anthropic:claude-sonnet-4-5-20250929"
-    },
-    {
-      "value": "openai:openai/gpt-oss-20b",
-      "label": "openai:openai/gpt-oss-20b"
     }
   ]
 }
