@@ -32,12 +32,19 @@ function HomePageContent() {
   const [interruptCount, setInterruptCount] = useState(0);
 
   useEffect(() => {
-    fetch("/api/auth/header")
-      .then((r) => r.json())
+    fetch("/api/auth/header", { cache: "no-store", credentials: "same-origin" })
+      .then(async (r) => {
+        if (!r.ok) {
+          throw new Error(`Auth header fetch failed: ${r.status}`);
+        }
+        return r.json() as Promise<{ authorization: string | null }>;
+      })
       .then((data: { authorization: string | null }) => {
         if (data.authorization) setAuthorizationHeader(data.authorization);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error(err);
+      });
   }, []);
 
   useEffect(() => {
