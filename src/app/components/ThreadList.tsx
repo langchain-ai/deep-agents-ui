@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
-import { Loader2, MessageSquare, X } from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,7 +17,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useClient } from "@/providers/ClientProvider";
 import type { ThreadItem } from "@/app/hooks/useThreads";
 import { useThreads } from "@/app/hooks/useThreads";
 
@@ -123,8 +141,16 @@ export function ThreadList({
   onClose,
   onInterruptCountChange,
 }: ThreadListProps) {
-  const [currentThreadId] = useQueryState("threadId");
+  const client = useClient();
+  const [currentThreadId, setCurrentThreadId] = useQueryState("threadId");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [threadToDelete, setThreadToDelete] = useState<ThreadItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [renamingThreadId, setRenamingThreadId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const isStartingRenameRef = useRef(false);
 
   const threads = useThreads({
     status: statusFilter === "all" ? undefined : statusFilter,
@@ -205,6 +231,72 @@ export function ThreadList({
   useEffect(() => {
     onInterruptCountChange?.(interruptedCount);
   }, [interruptedCount, onInterruptCountChange]);
+
+  const handleDeleteThread = useCallback(async (e: React.MouseEvent) => {
+    // Prevent Radix from auto-closing the dialog (which would null out
+    // threadToDelete via onOpenChange before the async operation completes).
+    e.preventDefault();
+    const thread = threadToDelete;
+    if (!thread) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await client.threads.delete(thread.id);
+      if (currentThreadId === thread.id) {
+        await setCurrentThreadId(null);
+      }
+      await threads.mutate();
+      setIsDeleting(false);
+      setThreadToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete thread:", error);
+      setIsDeleting(false);
+      setDeleteError("Failed to delete thread. Please try again.");
+    }
+  }, [threadToDelete, client, currentThreadId, setCurrentThreadId, threads]);
+
+  const startRenaming = useCallback((thread: ThreadItem) => {
+    isStartingRenameRef.current = true;
+    setRenamingThreadId(thread.id);
+    setRenameValue(thread.title);
+  }, []);
+
+  // Focus the rename input once it renders.
+  useEffect(() => {
+    if (renamingThreadId) {
+      // Use rAF to ensure the input is in the DOM after render
+      requestAnimationFrame(() => {
+        renameInputRef.current?.focus();
+        renameInputRef.current?.select();
+      });
+    }
+  }, [renamingThreadId]);
+
+  const isCancellingRef = useRef(false);
+
+  const handleRenameThread = useCallback(async () => {
+    if (!renamingThreadId || isCancellingRef.current) {
+      isCancellingRef.current = false;
+      return;
+    }
+    const trimmed = renameValue.trim();
+    try {
+      // Empty name clears custom_name, reverting to auto-derived title
+      await client.threads.update(renamingThreadId, {
+        metadata: { custom_name: trimmed },
+      });
+      threads.mutate();
+    } catch (error) {
+      console.error("Failed to rename thread:", error);
+    } finally {
+      setRenamingThreadId(null);
+    }
+  }, [renamingThreadId, renameValue, client, threads]);
+
+  const cancelRenaming = useCallback(() => {
+    isCancellingRef.current = true;
+    setRenamingThreadId(null);
+  }, []);
 
   return (
     <div className="absolute inset-0 flex flex-col">
@@ -295,30 +387,113 @@ export function ThreadList({
                   <h4 className="m-0 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {GROUP_LABELS[group]}
                   </h4>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1" role="list">
                     {groupThreads.map((thread) => (
-                      <button
+                      <div
                         key={thread.id}
-                        type="button"
-                        onClick={() => onThreadSelect(thread.id)}
+                        role="listitem"
+                        tabIndex={0}
                         className={cn(
-                          "grid w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors duration-200",
-                          "hover:bg-accent",
+                          "group grid w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors duration-200",
+                          "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           currentThreadId === thread.id
                             ? "border border-primary bg-accent hover:bg-accent"
                             : "border border-transparent bg-transparent"
                         )}
+                        onClick={() => {
+                          if (renamingThreadId !== thread.id) {
+                            onThreadSelect(thread.id);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (renamingThreadId === thread.id) return;
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onThreadSelect(thread.id);
+                          }
+                        }}
                         aria-current={currentThreadId === thread.id}
                       >
                         <div className="min-w-0 flex-1">
                           {/* Title + Timestamp Row */}
                           <div className="mb-1 flex items-center justify-between">
-                            <h3 className="truncate text-sm font-semibold">
-                              {thread.title}
-                            </h3>
-                            <span className="ml-2 flex-shrink-0 text-xs text-muted-foreground">
-                              {formatTime(thread.updatedAt)}
-                            </span>
+                            {renamingThreadId === thread.id ? (
+                              <input
+                                ref={renameInputRef}
+                                type="text"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                onBlur={handleRenameThread}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    // Blur triggers onBlur which is the single save path
+                                    e.currentTarget.blur();
+                                  } else if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    cancelRenaming();
+                                  }
+                                  e.stopPropagation();
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-6 w-full truncate rounded border border-primary bg-background px-1 text-sm font-semibold outline-none"
+                              />
+                            ) : (
+                              <h3 className="truncate text-sm font-semibold">
+                                {thread.title}
+                              </h3>
+                            )}
+                            <div className="ml-2 flex flex-shrink-0 items-center gap-1">
+                              <span className="text-xs text-muted-foreground">
+                                {formatTime(thread.updatedAt)}
+                              </span>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md opacity-0 transition-opacity hover:bg-accent-foreground/10 group-hover:opacity-100 data-[state=open]:opacity-100"
+                                    onClick={(e) => e.stopPropagation()}
+                                    aria-label="Thread options"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  onCloseAutoFocus={(e) => {
+                                    // Prevent Radix from restoring focus to the
+                                    // trigger when we're entering rename mode.
+                                    // The ref is set synchronously in startRenaming
+                                    // before the menu closes.
+                                    if (isStartingRenameRef.current) {
+                                      e.preventDefault();
+                                      isStartingRenameRef.current = false;
+                                    }
+                                  }}
+                                >
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startRenaming(thread);
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                    Rename
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    variant="destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setThreadToDelete(thread);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                           {/* Description + Status Row */}
                           <div className="flex items-center justify-between">
@@ -335,7 +510,7 @@ export function ThreadList({
                             </div>
                           </div>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -364,6 +539,45 @@ export function ThreadList({
           </div>
         )}
       </ScrollArea>
+
+      <AlertDialog
+        open={!!threadToDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setThreadToDelete(null);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete thread</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &ldquo;{threadToDelete?.title}&rdquo;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && (
+            <p className="text-sm text-destructive">{deleteError}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteThread}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
