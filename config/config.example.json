@@ -1,4 +1,10 @@
 {
+  "deployments": [
+    {
+      "value": "https://your-deployment-url",
+      "label": "Default Deployment"
+    }
+  ],
   "assistants": [
     { "value": "research", "label": "Research Agent" },
     { "value": "chat", "label": "Chat Agent" },

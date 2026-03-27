@@ -16,6 +16,7 @@ export async function GET() {
       }
       // Return empty config if neither exists
       return NextResponse.json({
+        deployments: [],
         assistants: [],
         projects: [],
         models: [],
@@ -27,7 +28,7 @@ export async function GET() {
   } catch (error) {
     console.error("Error reading config:", error);
     return NextResponse.json(
-      { assistants: [], projects: [], models: [] },
+      { deployments: [], assistants: [], projects: [], models: [] },
       { status: 500 }
     );
   }

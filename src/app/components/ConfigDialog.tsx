@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -26,6 +25,11 @@ import { StandaloneConfig } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 interface Project {
+  value: string;
+  label: string;
+}
+
+interface Deployment {
   value: string;
   label: string;
 }
@@ -73,6 +77,7 @@ export function ConfigDialog({
   const [subagentModelOverridesError, setSubagentModelOverridesError] = useState<
     string | null
   >(null);
+  const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [llmModels, setLlmModels] = useState<LLMModel[]>([]);
   const [assistants, setAssistants] = useState<Assistant[]>([]);
@@ -95,6 +100,7 @@ export function ConfigDialog({
         const response = await fetch("/api/config");
         if (response.ok) {
           const data = await response.json();
+          setDeployments(data.deployments || []);
           setProjects(data.projects || []);
           setLlmModels(data.models || []);
           setAssistants(data.assistants || []);
@@ -146,12 +152,27 @@ export function ConfigDialog({
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="deploymentUrl">Deployment URL</Label>
-            <Input
-              id="deploymentUrl"
-              placeholder="https://<deployment-url>"
+            <Select
               value={deploymentUrl}
-              onChange={(e) => setDeploymentUrl(e.target.value)}
-            />
+              onValueChange={setDeploymentUrl}
+            >
+              <SelectTrigger id="deploymentUrl">
+                <SelectValue placeholder="Select a deployment URL" />
+              </SelectTrigger>
+              <SelectContent>
+                {[
+                  ...deployments,
+                  ...(deploymentUrl &&
+                  !deployments.some((deployment) => deployment.value === deploymentUrl)
+                    ? [{ value: deploymentUrl, label: deploymentUrl }]
+                    : []),
+                ].map((deployment) => (
+                  <SelectItem key={deployment.value} value={deployment.value}>
+                    {deployment.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="assistantId">Assistant ID</Label>
