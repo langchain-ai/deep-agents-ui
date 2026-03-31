@@ -1,7 +1,10 @@
+"use client";
+
 import useSWRInfinite from "swr/infinite";
 import type { Thread } from "@langchain/langgraph-sdk";
 import { Client } from "@langchain/langgraph-sdk";
 import { getConfig } from "@/lib/config";
+import { useAuthHeader } from "@/providers/AuthHeaderProvider";
 
 export interface ThreadItem {
   id: string;
@@ -19,6 +22,7 @@ export function useThreads(props: {
   limit?: number;
 }) {
   const pageSize = props.limit || DEFAULT_PAGE_SIZE;
+  const { authorization, ready: authReady } = useAuthHeader();
 
   return useSWRInfinite(
     (pageIndex: number, previousPageData: ThreadItem[] | null) => {
@@ -35,6 +39,10 @@ export function useThreads(props: {
         return null;
       }
 
+      if (!authReady) {
+        return null;
+      }
+
       // If the previous page returned no items, we've reached the end
       if (previousPageData && previousPageData.length === 0) {
         return null;
@@ -47,6 +55,7 @@ export function useThreads(props: {
         deploymentUrl: config.deploymentUrl,
         assistantId: config.assistantId,
         apiKey,
+        authorization: authorization ?? "",
         status: props?.status,
       };
     },
@@ -54,6 +63,7 @@ export function useThreads(props: {
       deploymentUrl,
       assistantId,
       apiKey,
+      authorization,
       status,
       pageIndex,
       pageSize,
@@ -64,13 +74,20 @@ export function useThreads(props: {
       deploymentUrl: string;
       assistantId: string;
       apiKey: string;
+      authorization: string;
       status?: Thread["status"];
     }) => {
+      const defaultHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        "X-Api-Key": apiKey,
+      };
+      if (authorization) {
+        defaultHeaders["Authorization"] = authorization;
+      }
+
       const client = new Client({
         apiUrl: deploymentUrl,
-        defaultHeaders: {
-          "X-Api-Key": apiKey,
-        },
+        defaultHeaders,
       });
 
       const threads = await client.threads.search({

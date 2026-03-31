@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo, ReactNode } from "react";
 import { Client } from "@langchain/langgraph-sdk";
+import { useAuthHeader } from "@/providers/AuthHeaderProvider";
 
 interface ClientContextValue {
   client: Client;
@@ -13,29 +14,28 @@ interface ClientProviderProps {
   children: ReactNode;
   deploymentUrl: string;
   apiKey: string;
-  /** Authorization header from incoming request (e.g. from auth proxy). Forwarded as-is when present. */
-  authorizationHeader?: string;
 }
 
 export function ClientProvider({
   children,
   deploymentUrl,
   apiKey,
-  authorizationHeader,
 }: ClientProviderProps) {
+  const { authorization } = useAuthHeader();
+
   const client = useMemo(() => {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-Api-Key": apiKey,
     };
-    if (authorizationHeader) {
-      headers["Authorization"] = authorizationHeader;
+    if (authorization) {
+      headers["Authorization"] = authorization;
     }
     return new Client({
       apiUrl: deploymentUrl,
       defaultHeaders: headers,
     });
-  }, [deploymentUrl, apiKey, authorizationHeader]);
+  }, [deploymentUrl, apiKey, authorization]);
 
   const value = useMemo(() => ({ client }), [client]);
 

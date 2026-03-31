@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { UseStreamThread } from "@langchain/langgraph-sdk/react";
 import type { Attachment, TodoItem } from "@/app/types/types";
 import { useClient } from "@/providers/ClientProvider";
+import { useAuthHeader } from "@/providers/AuthHeaderProvider";
 import { HumanResponse } from "@/app/types/inbox";
 import { isImageMimeType } from "@/app/utils/utils";
 import { useQueryState } from "nuqs";
@@ -38,6 +39,7 @@ export function useChat({
 }) {
   const [threadId, setThreadId] = useQueryState("threadId");
   const client = useClient();
+  const { authorization } = useAuthHeader();
 
   const stream = useStream<StateType>({
     assistantId: activeAssistant?.assistant_id || "",
@@ -45,7 +47,10 @@ export function useChat({
     reconnectOnMount: true,
     threadId: threadId ?? null,
     onThreadId: setThreadId,
-    defaultHeaders: { "x-auth-scheme": "langsmith" },
+    defaultHeaders: {
+      "x-auth-scheme": "langsmith",
+      ...(authorization ? { Authorization: authorization } : {}),
+    },
     // Revalidate thread list when stream finishes, errors, or creates new thread
     onFinish: onHistoryRevalidate,
     onError: onHistoryRevalidate,

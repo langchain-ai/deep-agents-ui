@@ -24,28 +24,9 @@ function HomePageContent() {
   const [assistantId, setAssistantId] = useQueryState("assistantId");
   const [_threadId, setThreadId] = useQueryState("threadId");
   const [sidebar, setSidebar] = useQueryState("sidebar");
-  const [authorizationHeader, setAuthorizationHeader] = useState<
-    string | undefined
-  >(undefined);
 
   const [mutateThreads, setMutateThreads] = useState<(() => void) | null>(null);
   const [interruptCount, setInterruptCount] = useState(0);
-
-  useEffect(() => {
-    fetch("/api/auth/header", { cache: "no-store", credentials: "same-origin" })
-      .then(async (r) => {
-        if (!r.ok) {
-          throw new Error(`Auth header fetch failed: ${r.status}`);
-        }
-        return r.json() as Promise<{ authorization: string | null }>;
-      })
-      .then((data: { authorization: string | null }) => {
-        if (data.authorization) setAuthorizationHeader(data.authorization);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }, []);
 
   useEffect(() => {
     const savedConfig = getConfig();
@@ -141,11 +122,7 @@ function HomePageContent() {
         onSave={handleSaveConfig}
         initialConfig={config}
       />
-      <ClientProvider
-        deploymentUrl={config.deploymentUrl}
-        apiKey={langsmithApiKey}
-        authorizationHeader={authorizationHeader}
-      >
+      <ClientProvider deploymentUrl={config.deploymentUrl} apiKey={langsmithApiKey}>
         <div className="flex h-screen flex-col">
           <header className="flex h-16 items-center justify-between border-b border-border px-6">
             <div className="flex items-center gap-4">
