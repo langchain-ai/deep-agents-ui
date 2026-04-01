@@ -158,9 +158,7 @@ function HomePageInner({
         </header>
 
         <div className="flex-1 overflow-hidden">
-          <ResizablePanelGroup
-            orientation="horizontal"
-          >
+          <ResizablePanelGroup orientation="horizontal">
             {sidebar && (
               <>
                 <ResizablePanel
