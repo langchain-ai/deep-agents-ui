@@ -159,14 +159,12 @@ function HomePageInner({
 
         <div className="flex-1 overflow-hidden">
           <ResizablePanelGroup
-            direction="horizontal"
-            autoSaveId="standalone-chat"
+            orientation="horizontal"
           >
             {sidebar && (
               <>
                 <ResizablePanel
                   id="thread-history"
-                  order={1}
                   defaultSize={25}
                   minSize={20}
                   className="relative min-w-[380px]"
@@ -187,7 +185,6 @@ function HomePageInner({
             <ResizablePanel
               id="chat"
               className="relative flex flex-col"
-              order={2}
             >
               <ChatProvider
                 activeAssistant={assistant}
