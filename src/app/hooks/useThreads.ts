@@ -106,13 +106,24 @@ export function useThreads(props: {
         let title = "Untitled Thread";
         let description = "";
 
+        const meta = thread.metadata;
+        const threadNameFromMeta =
+          meta &&
+          typeof meta.thread_name === "string" &&
+          meta.thread_name.trim().length > 0
+            ? meta.thread_name.trim()
+            : null;
+        if (threadNameFromMeta) {
+          title = threadNameFromMeta;
+        }
+
         try {
           if (thread.values && typeof thread.values === "object") {
             const values = thread.values as any;
             const firstHumanMessage = values.messages.find(
               (m: any) => m.type === "human"
             );
-            if (firstHumanMessage?.content) {
+            if (!threadNameFromMeta && firstHumanMessage?.content) {
               const content =
                 typeof firstHumanMessage.content === "string"
                   ? firstHumanMessage.content
@@ -131,8 +142,9 @@ export function useThreads(props: {
             }
           }
         } catch {
-          // Fallback to thread ID
-          title = `Thread ${thread.thread_id.slice(0, 8)}`;
+          if (!threadNameFromMeta) {
+            title = `Thread ${thread.thread_id.slice(0, 8)}`;
+          }
         }
 
         return {

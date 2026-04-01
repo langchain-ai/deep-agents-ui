@@ -6,22 +6,32 @@
     }
   ],
   "assistants": [
-    { "value": "research", "label": "Research Agent" },
+    {
+      "value": "research",
+      "label": "Research Agent",
+      "subagentModelOverrideTemplates": {
+        "default-researcher": "litellm:openai/gpt-5.4",
+        "qa-requirements-researcher": "litellm:openai/gpt-5.4",
+        "ba-requirements-reviewer": "litellm:openai/gpt-5.4",
+        "business-story-to-ba-specification-developer": "litellm:openai/gpt-5.4"
+      }
+    },
     { "value": "chat", "label": "Chat Agent" },
     { "value": "mt_chat", "label": "MT Chat Agent" },
     { "value": "pure_local_chat", "label": "Pure Local Chat Agent" },
     { "value": "sd_chat", "label": "SD Chat Agent" },
     { "value": "story_chat", "label": "Story Chat Agent" },
-    { "value": "qa_research", "label": "QA Research Agent" },
+    {
+      "value": "qa_research",
+      "label": "QA Research Agent",
+      "subagentModelOverrideTemplates": {
+        "spec-researcher-test": "litellm:openai/gpt-5.4",
+        "qa-requirements-researcher": "litellm:openai/gpt-5.4"
+      }
+    },
     {
       "value": "spec_research",
-      "label": "Spec Research Agent",
-      "subagentModelOverrideTemplates": {
-        "default-researcher": "openai:gpt-5.4",
-        "qa-requirements-researcher": "openai:gpt-5.4",
-        "ba-requirements-reviewer": "openai:gpt-5.4",
-        "business-story-to-ba-specification-developer": "openai:gpt-5.4"
-      }
+      "label": "Spec Research Agent"
     },
     { "value": "meeting_summary", "label": "Meeting Summary Agent" }
   ],
@@ -36,7 +46,6 @@
     }
   ],
   "models": [
-
     {
       "value": "openai:gpt-5.4",
       "label": "openai:gpt-5.4"
