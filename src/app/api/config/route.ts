@@ -28,7 +28,12 @@ export async function GET() {
   } catch (error) {
     console.error("Error reading config:", error);
     return NextResponse.json(
-      { deployments: [], assistants: [], projects: [], models: [] },
+      {
+        deployments: [],
+        assistants: [],
+        projects: [],
+        models: [],
+      },
       { status: 500 }
     );
   }

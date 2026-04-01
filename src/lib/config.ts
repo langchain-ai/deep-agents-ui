@@ -4,7 +4,8 @@ export interface StandaloneConfig {
   langsmithApiKey?: string;
   llmModelName: string;
   project?: string;
-  subagentModelOverrides?: string;
+  /** Per-assistant JSON string of subagent name → model id; missing entry uses assistants[].subagentModelOverrideTemplates or {} */
+  subagentModelOverridesByAssistant?: Record<string, string>;
 }
 
 const CONFIG_KEY = "deep-agent-config";
@@ -25,4 +26,11 @@ export function getConfig(): StandaloneConfig | null {
 export function saveConfig(config: StandaloneConfig): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+}
+
+/** Raw JSON string for subagent overrides for the active assistant. */
+export function getSubagentOverridesRawForAssistant(
+  config: StandaloneConfig,
+): string | undefined {
+  return config.subagentModelOverridesByAssistant?.[config.assistantId];
 }

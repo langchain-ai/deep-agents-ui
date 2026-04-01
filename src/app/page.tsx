@@ -1,8 +1,12 @@
 "use client";
 
-import React, { Suspense, useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect, useMemo } from "react";
 import { useQueryState } from "nuqs";
-import { getConfig, saveConfig, StandaloneConfig } from "@/lib/config";
+import { getConfig, getSubagentOverridesRawForAssistant, saveConfig, StandaloneConfig } from "@/lib/config";
+import {
+  buildSubagentTemplatesByAssistantId,
+  mergeSubagentModelsForAssistant,
+} from "@/lib/subagentTemplates";
 import { ConfigDialog } from "@/app/components/ConfigDialog";
 import { Button } from "@/components/ui/button";
 import { Assistant } from "@langchain/langgraph-sdk";
@@ -27,6 +31,9 @@ function HomePageContent() {
 
   const [mutateThreads, setMutateThreads] = useState<(() => void) | null>(null);
   const [interruptCount, setInterruptCount] = useState(0);
+  const [subagentTemplatesByAssistant, setSubagentTemplatesByAssistant] = useState<
+    Record<string, Record<string, string>>
+  >({});
 
   useEffect(() => {
     const savedConfig = getConfig();
@@ -47,6 +54,25 @@ function HomePageContent() {
     }
   }, [config, assistantId, setAssistantId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/config");
+        if (!response.ok || cancelled) return;
+        const data = await response.json();
+        if (!cancelled) {
+          setSubagentTemplatesByAssistant(buildSubagentTemplatesByAssistantId(data));
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleSaveConfig = (newConfig: StandaloneConfig) => {
     saveConfig(newConfig);
     setConfig(newConfig);
@@ -54,6 +80,17 @@ function HomePageContent() {
 
   const langsmithApiKey =
     config?.langsmithApiKey || process.env.NEXT_PUBLIC_LANGSMITH_API_KEY || "";
+
+  const subagentModelsConfig = useMemo(() => {
+    if (!config) return undefined;
+    const template = subagentTemplatesByAssistant[config.assistantId] ?? {};
+    const raw = getSubagentOverridesRawForAssistant(config);
+    const merged = mergeSubagentModelsForAssistant(template, raw);
+    if (Object.keys(merged).length === 0) {
+      return undefined;
+    }
+    return merged;
+  }, [config, subagentTemplatesByAssistant]);
 
   if (!config) {
     return (
@@ -79,18 +116,6 @@ function HomePageContent() {
         </div>
       </>
     );
-  }
-
-  let subagentModelsConfig: Record<string, string> | undefined;
-  if (config.subagentModelOverrides) {
-    try {
-      const parsed = JSON.parse(config.subagentModelOverrides);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        subagentModelsConfig = parsed as Record<string, string>;
-      }
-    } catch {
-      // Ignore invalid JSON; backend will behave as if no overrides were provided.
-    }
   }
 
   const defaultModelName = "litellm:openai/gpt-5-mini";
