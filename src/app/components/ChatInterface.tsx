@@ -329,6 +329,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       runSingleStep,
       continueStream,
       stopStream,
+      responseDurationByAiMessageId,
     } = useChatContext();
 
     const submitDisabled = isLoading || !assistant;
@@ -665,6 +666,11 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                       interrupt={interrupt}
                       ui={messageUi}
                       stream={stream}
+                      responseDurationMs={
+                        data.message.type === "ai" && data.message.id
+                          ? responseDurationByAiMessageId[data.message.id]
+                          : undefined
+                      }
                     />
                   );
                 })}

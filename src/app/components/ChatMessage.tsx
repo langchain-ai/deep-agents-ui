@@ -18,6 +18,19 @@ import {
 import { cn } from "@/lib/utils";
 import { FeedbackButtons } from "@/app/components/FeedbackButtons";
 
+function formatAgentResponseDuration(ms: number): string {
+  if (ms < 1000) {
+    return `${ms} ms`;
+  }
+  const seconds = ms / 1000;
+  if (seconds < 60) {
+    return `${seconds.toFixed(1)} s`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const rem = seconds % 60;
+  return `${minutes}m ${rem.toFixed(0)}s`;
+}
+
 interface ChatMessageProps {
   message: Message;
   toolCalls: ToolCall[];
@@ -29,6 +42,8 @@ interface ChatMessageProps {
   interrupt?: Interrupt;
   ui?: any[];
   stream?: any;
+  /** Wall-clock time for the last completed agent run that produced this AI message (client-measured). */
+  responseDurationMs?: number;
 }
 
 export const ChatMessage = React.memo<ChatMessageProps>(
@@ -43,6 +58,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
     interrupt,
     ui,
     stream,
+    responseDurationMs,
   }) => {
     const isUser = message.type === "human";
     const isAIMessage = message.type === "ai";
@@ -186,11 +202,22 @@ export const ChatMessage = React.memo<ChatMessageProps>(
               )}
             </div>
           )}
-          {isAIMessage && hasContent && !isLoading && message.id && (
-            <div className="mt-2 flex items-center">
-              <FeedbackButtons traceId={message.id} />
-            </div>
-          )}
+          {isAIMessage &&
+            !isLoading &&
+            message.id &&
+            (hasContent || responseDurationMs != null) && (
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                {hasContent && <FeedbackButtons traceId={message.id} />}
+                {responseDurationMs != null && (
+                  <span
+                    className="text-muted-foreground text-xs tabular-nums"
+                    title="Time from your request until this reply finished (measured in the browser)"
+                  >
+                    {formatAgentResponseDuration(responseDurationMs)}
+                  </span>
+                )}
+              </div>
+            )}
           {hasToolCalls && (
             <div className="mt-4 flex w-full flex-col">
               {toolCalls.map((toolCall: ToolCall, idx, arr) => {

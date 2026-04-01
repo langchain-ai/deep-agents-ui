@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import {
   type Message,
@@ -57,6 +57,41 @@ export function useChat({
     onCreated: onHistoryRevalidate,
     experimental_thread: thread,
   });
+
+  const runStartedAtRef = useRef<number | null>(null);
+  const prevIsLoadingRef = useRef(stream.isLoading);
+  const [responseDurationByAiMessageId, setResponseDurationByAiMessageId] =
+    useState<Record<string, number>>({});
+
+  useEffect(() => {
+    setResponseDurationByAiMessageId({});
+  }, [threadId]);
+
+  useEffect(() => {
+    const wasLoading = prevIsLoadingRef.current;
+    const nowLoading = stream.isLoading;
+    if (wasLoading && !nowLoading && runStartedAtRef.current != null) {
+      const started = runStartedAtRef.current;
+      runStartedAtRef.current = null;
+      const msgs = stream.messages ?? [];
+      let lastAiId: string | undefined;
+      for (let i = msgs.length - 1; i >= 0; i -= 1) {
+        const m = msgs[i];
+        if (m.type === "ai" && m.id) {
+          lastAiId = m.id;
+          break;
+        }
+      }
+      if (lastAiId) {
+        const durationMs = Math.round(performance.now() - started);
+        setResponseDurationByAiMessageId((prev) => ({
+          ...prev,
+          [lastAiId!]: durationMs,
+        }));
+      }
+    }
+    prevIsLoadingRef.current = nowLoading;
+  }, [stream.isLoading, stream.messages]);
 
   const sendMessage = useCallback(
     async (content: string, attachments?: Attachment[]) => {
@@ -154,6 +189,7 @@ export function useChat({
         submitValues.files = documentFiles;
       }
 
+      runStartedAtRef.current = performance.now();
       stream.submit(submitValues, {
         optimisticValues: (prev) => ({
           messages: [...(prev.messages ?? []), newMessage],
@@ -176,6 +212,7 @@ export function useChat({
       isRerunningSubagent?: boolean,
       optimisticMessages?: Message[]
     ) => {
+      runStartedAtRef.current = performance.now();
       if (checkpoint) {
         stream.submit(undefined, {
           ...(optimisticMessages
@@ -209,6 +246,7 @@ export function useChat({
 
   const continueStream = useCallback(
     (hasTaskToolCall?: boolean) => {
+      runStartedAtRef.current = performance.now();
       stream.submit(undefined, {
         config: {
           ...(activeAssistant?.config || {}),
@@ -226,6 +264,7 @@ export function useChat({
 
   const sendHumanResponse = useCallback(
     (response: HumanResponse[]) => {
+      runStartedAtRef.current = performance.now();
       stream.submit(null, { command: { resume: response } });
       // Update thread list when resuming from interrupt
       onHistoryRevalidate?.();
@@ -240,6 +279,7 @@ export function useChat({
   }, [stream, onHistoryRevalidate]);
 
   const stopStream = useCallback(() => {
+    runStartedAtRef.current = null;
     stream.stop();
   }, [stream]);
 
@@ -251,6 +291,7 @@ export function useChat({
     ui: stream.values.ui,
     setFiles,
     messages: stream.messages,
+    responseDurationByAiMessageId,
     isLoading: stream.isLoading,
     isThreadLoading: stream.isThreadLoading,
     interrupt: stream.interrupt,
