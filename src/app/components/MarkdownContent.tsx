@@ -102,14 +102,14 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
             },
             ul({ children }: { children?: React.ReactNode }) {
               return (
-                <ul className="my-4 pl-6 [&>li:last-child]:mb-0 [&>li]:mb-1">
+                <ul className="my-4 list-disc pl-6 [&>li:last-child]:mb-0 [&>li]:mb-1">
                   {children}
                 </ul>
               );
             },
             ol({ children }: { children?: React.ReactNode }) {
               return (
-                <ol className="my-4 pl-6 [&>li:last-child]:mb-0 [&>li]:mb-1">
+                <ol className="my-4 list-decimal pl-6 [&>li:last-child]:mb-0 [&>li]:mb-1">
                   {children}
                 </ol>
               );

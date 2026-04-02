@@ -5,7 +5,7 @@ import { RotateCcw, FileIcon } from "lucide-react";
 import { SubAgentIndicator } from "@/app/components/SubAgentIndicator";
 import { ToolCallBox } from "@/app/components/ToolCallBox";
 import { MarkdownContent } from "@/app/components/MarkdownContent";
-import type { SubAgent, ToolCall } from "@/app/types/types";
+import type { ChatMode, SubAgent, ToolCall } from "@/app/types/types";
 import { Interrupt, Message } from "@langchain/langgraph-sdk";
 import {
   extractSubAgentContent,
@@ -44,6 +44,7 @@ interface ChatMessageProps {
   stream?: any;
   /** Wall-clock time for the last completed agent run that produced this AI message (client-measured). */
   responseDurationMs?: number;
+  mode?: ChatMode;
 }
 
 export const ChatMessage = React.memo<ChatMessageProps>(
@@ -59,6 +60,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
     ui,
     stream,
     responseDurationMs,
+    mode = "admin",
   }) => {
     const isUser = message.type === "human";
     const isAIMessage = message.type === "ai";
@@ -67,6 +69,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
       : extractStringFromMessageContent(message);
     const hasContent = messageContent && messageContent.trim() !== "";
     const hasToolCalls = toolCalls.length > 0;
+    const isAdmin = mode === "admin";
 
     const imageBlocks = useMemo(
       () => (isUser ? extractImagesFromMessageContent(message) : []),
@@ -202,7 +205,8 @@ export const ChatMessage = React.memo<ChatMessageProps>(
               )}
             </div>
           )}
-          {isAIMessage &&
+          {isAdmin &&
+            isAIMessage &&
             !isLoading &&
             message.id &&
             (hasContent || responseDurationMs != null) && (
@@ -218,7 +222,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                 )}
               </div>
             )}
-          {hasToolCalls && (
+          {isAdmin && hasToolCalls && (
             <div className="mt-4 flex w-full flex-col">
               {toolCalls.map((toolCall: ToolCall, idx, arr) => {
                 if (toolCall.name === "task") return null;
@@ -241,7 +245,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
               })}
             </div>
           )}
-          {!isUser && subAgents.length > 0 && (
+          {isAdmin && !isUser && subAgents.length > 0 && (
             <div className="flex w-fit max-w-full flex-col gap-4">
               {subAgents.map((subAgent) => (
                 <div

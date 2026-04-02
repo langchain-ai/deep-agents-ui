@@ -234,6 +234,7 @@ function HomePageContent() {
                   <ChatInterface
                     assistant={assistant}
                     debugMode={debugMode}
+                    mode="admin"
                     controls={<></>}
                     skeleton={
                       <div className="flex items-center justify-center p-8">

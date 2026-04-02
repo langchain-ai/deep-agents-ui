@@ -1,3 +1,5 @@
+export type ChatMode = "admin" | "user" | "embed";
+
 export interface ToolCall {
   id: string;
   name: string;

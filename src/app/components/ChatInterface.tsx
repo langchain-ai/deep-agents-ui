@@ -19,12 +19,13 @@ import {
   Circle,
   FileIcon,
   Paperclip,
+  RotateCcw,
   X,
   ImageIcon,
   File as FileIconLucide,
 } from "lucide-react";
 import { ChatMessage } from "@/app/components/ChatMessage";
-import type { Attachment, TodoItem, ToolCall } from "@/app/types/types";
+import type { Attachment, ChatMode, TodoItem, ToolCall } from "@/app/types/types";
 import { Assistant, Message } from "@langchain/langgraph-sdk";
 import {
   extractStringFromMessageContent,
@@ -49,6 +50,8 @@ interface ChatInterfaceProps {
   hideInternalToggle?: boolean;
   InterruptActionsRenderer?: React.ComponentType;
   onInput?: (input: string) => void;
+  mode?: ChatMode;
+  onClearThread?: () => void;
 
   controls: React.ReactNode;
   banner?: React.ReactNode;
@@ -170,6 +173,8 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
     view,
     onViewChange,
     onInput,
+    mode = "admin",
+    onClearThread,
     controls,
     banner,
     hideInternalToggle,
@@ -189,6 +194,11 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
     const workflowView = isControlledView
       ? view === "workflow"
       : isWorkflowView;
+    const isAdmin = mode === "admin";
+    const isEmbed = mode === "embed";
+    const showAttachments = !isEmbed;
+    const showTasksFiles = isAdmin;
+    const showWorkflowToggle = isAdmin;
 
     useEffect(() => {
       const timeout = setTimeout(() => void textareaRef.current?.focus());
@@ -294,6 +304,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
 
     const handlePaste = useCallback(
       (e: React.ClipboardEvent) => {
+        if (isEmbed) return;
         const items = e.clipboardData?.items;
         if (!items) return;
         const imageFiles: File[] = [];
@@ -311,7 +322,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
           processFiles(imageFiles);
         }
       },
-      [processFiles]
+      [processFiles, isEmbed]
     );
 
     const {
@@ -533,7 +544,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       });
     }, [messages, interrupt]);
 
-    const toggle = !hideInternalToggle && (
+    const toggle = showWorkflowToggle && !hideInternalToggle && (
       <div className="flex w-full justify-center">
         <div className="flex h-[24px] w-[134px] items-center gap-0 overflow-hidden rounded border border-[#D1D1D6] bg-white p-[3px] text-[12px] shadow-sm">
           <button
@@ -657,6 +668,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                     <ChatMessage
                       key={data.message.id}
                       message={data.message}
+                      mode={mode}
                       toolCalls={data.toolCalls}
                       onRestartFromAIMessage={handleRestartFromAIMessage}
                       onRestartFromSubTask={handleRestartFromSubTask}
@@ -697,7 +709,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
               "mx-auto w-[calc(100%-32px)] max-w-[1024px] transition-colors duration-200 ease-in-out"
             )}
           >
-            {(hasTasks || hasFiles) && (
+            {showTasksFiles && (hasTasks || hasFiles) && (
               <div className="flex max-h-72 flex-col overflow-y-auto border-b border-border bg-sidebar empty:hidden">
                 {!metaOpen && (
                   <>
@@ -907,14 +919,15 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
             <form
               onSubmit={handleSubmit}
               className="flex flex-col"
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
+              onDragOver={showAttachments ? handleDragOver : undefined}
+              onDragLeave={showAttachments ? handleDragLeave : undefined}
+              onDrop={showAttachments ? handleDrop : undefined}
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="
+              {showAttachments && (
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="
                   image/*,
                   .pdf,.doc,.docx,.xlsx,.xls,
                   .txt,.md,.csv,.json,.yaml,.yml,.xml,
@@ -924,16 +937,17 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                   .wav,.mp3,.m4a,.aac,.ogg,.flac,
                   .mp4,.m4v,.mov,.avi,.mkv
                 "
-                multiple
-                className="hidden"
-                onChange={handleFileInputChange}
-              />
+                  multiple
+                  className="hidden"
+                  onChange={handleFileInputChange}
+                />
+              )}
               {isDragOver && (
                 <div className="flex items-center justify-center border-b border-dashed border-primary/30 bg-primary/5 px-[18px] py-4 text-sm text-primary/60">
                   Drop files here to attach
                 </div>
               )}
-              {hasAttachments && (
+              {showAttachments && hasAttachments && (
                 <div className="flex flex-wrap gap-2 border-b border-border px-[18px] py-2">
                   {attachments.map((attachment) => (
                     <div
@@ -1000,15 +1014,28 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
               <div className="flex justify-between gap-2 p-3">
                 <div className="flex items-center gap-2">
                   {controls}
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                    title="Attach files"
-                    aria-label="Attach files"
-                  >
-                    <Paperclip size={16} />
-                  </button>
+                  {isEmbed && (
+                    <button
+                      type="button"
+                      onClick={onClearThread}
+                      className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                      title="Clear conversation"
+                      aria-label="Clear conversation"
+                    >
+                      <RotateCcw size={16} />
+                    </button>
+                  )}
+                  {showAttachments && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                      title="Attach files"
+                      aria-label="Attach files"
+                    >
+                      <Paperclip size={16} />
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-2">
