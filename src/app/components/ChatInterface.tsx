@@ -34,7 +34,6 @@ import {
   isTextFile,
   resolveImageMimeType,
 } from "@/app/utils/utils";
-import { v4 as uuidv4 } from "uuid";
 import { useChatContext } from "@/providers/ChatProvider";
 import { useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
