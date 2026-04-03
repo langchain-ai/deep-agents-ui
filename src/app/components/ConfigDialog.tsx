@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { StandaloneConfig } from "@/lib/config";
 import { buildSubagentTemplatesByAssistantId } from "@/lib/subagentTemplates";
 import { cn } from "@/lib/utils";
@@ -102,6 +103,9 @@ export function ConfigDialog({
   const [projects, setProjects] = useState<Project[]>([]);
   const [llmModels, setLlmModels] = useState<LLMModel[]>([]);
   const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [showInternalSteps, setShowInternalSteps] = useState(
+    initialConfig?.showInternalSteps ?? false,
+  );
 
   const assistantIdRef = useRef(assistantId);
   const overridesMapRef = useRef(overridesByAssistant);
@@ -114,6 +118,7 @@ export function ConfigDialog({
       setAssistantId(initialConfig.assistantId);
       setLlmModelName(initialConfig.llmModelName || DEFAULT_LLM_MODEL_NAME);
       setProject(initialConfig.project || "");
+      setShowInternalSteps(initialConfig.showInternalSteps ?? false);
       const map = { ...(initialConfig.subagentModelOverridesByAssistant ?? {}) };
       const id = initialConfig.assistantId;
       setOverridesByAssistant(map);
@@ -193,6 +198,7 @@ export function ConfigDialog({
       assistantId,
       llmModelName,
       project: project || undefined,
+      showInternalSteps,
       subagentModelOverridesByAssistant: mergedOverrides,
     });
     onOpenChange(false);
@@ -316,6 +322,19 @@ export function ConfigDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="showInternalSteps">Display internal LLM steps</Label>
+              <p className="text-xs text-muted-foreground">
+                Show intermediate agent and tool steps in the conversation.
+              </p>
+            </div>
+            <Switch
+              id="showInternalSteps"
+              checked={showInternalSteps}
+              onCheckedChange={setShowInternalSteps}
+            />
           </div>
           <div className="grid gap-2">
             <div className="flex items-center justify-between gap-2">

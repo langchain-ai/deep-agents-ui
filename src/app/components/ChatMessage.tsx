@@ -222,7 +222,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
                 )}
               </div>
             )}
-          {isAdmin && hasToolCalls && (
+          {isAdmin && hasToolCalls && debugMode && (
             <div className="mt-4 flex w-full flex-col">
               {toolCalls.map((toolCall: ToolCall, idx, arr) => {
                 if (toolCall.name === "task") return null;
@@ -245,7 +245,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(
               })}
             </div>
           )}
-          {isAdmin && !isUser && subAgents.length > 0 && (
+          {isAdmin && !isUser && subAgents.length > 0 && debugMode && (
             <div className="flex w-fit max-w-full flex-col gap-4">
               {subAgents.map((subAgent) => (
                 <div

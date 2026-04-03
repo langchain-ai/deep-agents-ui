@@ -4,6 +4,8 @@ export interface StandaloneConfig {
   langsmithApiKey?: string;
   llmModelName: string;
   project?: string;
+  /** When true, show internal LLM/agent steps in the UI. */
+  showInternalSteps?: boolean;
   /** Per-assistant JSON string of subagent name → model id; missing entry uses assistants[].subagentModelOverrideTemplates or {} */
   subagentModelOverridesByAssistant?: Record<string, string>;
 }

@@ -13,7 +13,7 @@ import type { Attachment, TodoItem } from "@/app/types/types";
 import { useClient } from "@/providers/ClientProvider";
 import { useAuthHeader } from "@/providers/AuthHeaderProvider";
 import { HumanResponse } from "@/app/types/inbox";
-import { isImageMimeType } from "@/app/utils/utils";
+import { isImageFile, resolveImageMimeType } from "@/app/utils/utils";
 import { useQueryState } from "nuqs";
 
 export type StateType = {
@@ -143,11 +143,14 @@ export function useChat({
 
         // Add inline attachment blocks (images, text files)
         for (const attachment of inlineAttachments) {
-          if (isImageMimeType(attachment.type)) {
+          if (isImageFile(attachment.type, attachment.name)) {
+            const mime =
+              resolveImageMimeType(attachment.type, attachment.name) ??
+              "image/png";
             contentBlocks.push({
               type: "image_url",
               image_url: {
-                url: `data:${attachment.type};base64,${attachment.content}`,
+                url: `data:${mime};base64,${attachment.content}`,
               },
             });
           } else {
