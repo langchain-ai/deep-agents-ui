@@ -24,7 +24,6 @@ import { ChatInterface } from "@/app/components/ChatInterface";
 function HomePageContent() {
   const [config, setConfig] = useState<StandaloneConfig | null>(null);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
-  const [debugMode, _] = useState(false);
   const [assistantId, setAssistantId] = useQueryState("assistantId");
   const [_threadId, setThreadId] = useQueryState("threadId");
   const [sidebar, setSidebar] = useQueryState("sidebar");
@@ -91,6 +90,8 @@ function HomePageContent() {
     }
     return merged;
   }, [config, subagentTemplatesByAssistant]);
+
+  const debugMode = config?.showInternalSteps ?? false;
 
   if (!config) {
     return (
