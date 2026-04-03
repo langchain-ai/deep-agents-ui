@@ -29,9 +29,10 @@ import { Assistant, Message } from "@langchain/langgraph-sdk";
 import {
   extractStringFromMessageContent,
   isDocumentFile,
-  isImageMimeType,
+  isImageFile,
   isPreparingToCallTaskTool,
   isTextFile,
+  resolveImageMimeType,
 } from "@/app/utils/utils";
 import { v4 as uuidv4 } from "uuid";
 import { useChatContext } from "@/providers/ChatProvider";
@@ -61,7 +62,7 @@ const MAX_FILE_SIZE_LARGE = 1024 * 1024 * 1024; // 1 GB for audio/video/doc uplo
 function readFileAsAttachment(file: File): Promise<Attachment> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    const isImage = isImageMimeType(file.type);
+    const isImage = isImageFile(file.type, file.name);
     const isDocument = isDocumentFile(file.type, file.name);
     const isText = isTextFile(file.type, file.name);
     const makeId = () =>
@@ -75,7 +76,7 @@ function readFileAsAttachment(file: File): Promise<Attachment> {
         resolve({
           id: makeId(),
           name: file.name,
-          type: file.type,
+          type: resolveImageMimeType(file.type, file.name) ?? file.type,
           size: file.size,
           preview: dataUrl,
           content: base64,
@@ -223,7 +224,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
       async (fileList: FileList | File[]) => {
         const files = Array.from(fileList);
         const validFiles = files.filter((f) => {
-          const isImage = isImageMimeType(f.type);
+          const isImage = isImageFile(f.type, f.name);
           const isDoc = isDocumentFile(f.type, f.name);
           const isTxt = isTextFile(f.type, f.name);
 
@@ -344,20 +345,12 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
 
         const messageText = input.trim();
         if ((!messageText && !hasAttachments) || isLoading) return;
-        if (debugMode) {
-          runSingleStep([
-            {
-              id: uuidv4(),
-              type: "human",
-              content: messageText,
-            },
-          ]);
-        } else {
-          sendMessage(
-            messageText,
-            hasAttachments ? attachments : undefined
-          );
-        }
+
+        sendMessage(
+          messageText,
+          hasAttachments ? attachments : undefined
+        );
+
         setInput("");
         setAttachments([]);
       },
@@ -365,9 +358,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
         input,
         isLoading,
         sendMessage,
-        debugMode,
         setInput,
-        runSingleStep,
         submitDisabled,
         hasAttachments,
         attachments,
@@ -946,7 +937,7 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(
                           alt={attachment.name}
                           className="h-8 w-8 flex-shrink-0 rounded object-cover"
                         />
-                      ) : isImageMimeType(attachment.type) ? (
+                      ) : isImageFile(attachment.type, attachment.name) ? (
                         <ImageIcon
                           size={14}
                           className="flex-shrink-0 text-muted-foreground"

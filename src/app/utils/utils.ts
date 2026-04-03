@@ -163,6 +163,51 @@ export function isImageMimeType(mimeType: string): boolean {
   return mimeType.startsWith("image/");
 }
 
+/** Lowercase extension → MIME for raster images (used when the browser omits or misreports type). */
+const IMAGE_EXTENSION_TO_MIME: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".bmp": "image/bmp",
+  ".heic": "image/heic",
+  ".heif": "image/heif",
+  ".avif": "image/avif",
+  ".tiff": "image/tiff",
+  ".tif": "image/tiff",
+};
+
+/**
+ * Infer image/* MIME from file name when `File.type` is empty or generic (e.g. paste, some drag sources).
+ */
+export function imageMimeFromFileName(fileName: string): string | null {
+  const dot = fileName.lastIndexOf(".");
+  if (dot === -1) return null;
+  const ext = fileName.slice(dot).toLowerCase();
+  return IMAGE_EXTENSION_TO_MIME[ext] ?? null;
+}
+
+/**
+ * Whether the file should be treated as an image for chat (inline image_url blocks).
+ * Uses MIME when reliable; falls back to extension when type is missing or octet-stream.
+ */
+export function isImageFile(mimeType: string, fileName: string): boolean {
+  if (isImageMimeType(mimeType)) return true;
+  return imageMimeFromFileName(fileName) !== null;
+}
+
+/**
+ * Prefer real image/* from the browser; otherwise infer from extension for data URLs.
+ */
+export function resolveImageMimeType(
+  mimeType: string,
+  fileName: string
+): string | null {
+  if (isImageMimeType(mimeType)) return mimeType;
+  return imageMimeFromFileName(fileName);
+}
+
 const TEXT_MIME_PREFIXES = ["text/", "application/json", "application/xml"];
 const TEXT_EXTENSIONS = [
   ".txt",
