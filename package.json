@@ -32,6 +32,8 @@
     "clsx": "^1.2.1",
     "date-fns": "^4.1.0",
     "diff": "^8.0.3",
+    "echarts": "^6.0.0",
+    "echarts-for-react": "^3.0.6",
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.23",
     "lucide-react": "^0.539.0",
