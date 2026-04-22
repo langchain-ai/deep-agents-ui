@@ -54,7 +54,7 @@ export function useChat({
   });
 
   const sendMessage = useCallback(
-    (content: string) => {
+    (content: string | any[]) => {
       const newMessage: Message = { id: uuidv4(), type: "human", content };
       stream.submit(
         { messages: [newMessage] },
