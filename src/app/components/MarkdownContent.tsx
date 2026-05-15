@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "@/lib/utils";
+import { ChartRenderer } from "@/app/components/ChartRenderer";
 
 interface MarkdownContentProps {
   content: string;
@@ -115,13 +116,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               );
             },
             table({ children }: { children?: React.ReactNode }) {
-              return (
-                <div className="my-4 overflow-x-auto">
-                  <table className="[&_th]:bg-surface w-full border-collapse [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:text-left [&_th]:font-semibold">
-                    {children}
-                  </table>
-                </div>
-              );
+              return <TableWithChart>{children}</TableWithChart>;
             },
           }}
         >
@@ -133,3 +128,98 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
 );
 
 MarkdownContent.displayName = "MarkdownContent";
+
+/** 递归提取 React children 中的纯文本 */
+function getTextContent(node: React.ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(getTextContent).join("");
+  if (React.isValidElement(node))
+    return getTextContent(
+      (node.props as { children?: React.ReactNode }).children
+    );
+  return "";
+}
+
+/** 从 table 的 React children 中提取 columns 和 rows */
+function extractTableData(children: React.ReactNode): {
+  columns: string[];
+  rows: string[][];
+} {
+  const columns: string[] = [];
+  const rows: string[][] = [];
+
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return;
+    const tag = child.type as string;
+
+    if (tag === "thead") {
+      React.Children.forEach(
+        (child.props as { children?: React.ReactNode }).children,
+        (tr) => {
+          if (!React.isValidElement(tr)) return;
+          React.Children.forEach(
+            (tr.props as { children?: React.ReactNode }).children,
+            (th) => {
+              if (!React.isValidElement(th)) return;
+              columns.push(
+                getTextContent(
+                  (th.props as { children?: React.ReactNode }).children
+                )
+              );
+            }
+          );
+        }
+      );
+    }
+
+    if (tag === "tbody") {
+      React.Children.forEach(
+        (child.props as { children?: React.ReactNode }).children,
+        (tr) => {
+          if (!React.isValidElement(tr)) return;
+          const row: string[] = [];
+          React.Children.forEach(
+            (tr.props as { children?: React.ReactNode }).children,
+            (td) => {
+              if (!React.isValidElement(td)) return;
+              row.push(
+                getTextContent(
+                  (td.props as { children?: React.ReactNode }).children
+                )
+              );
+            }
+          );
+          rows.push(row);
+        }
+      );
+    }
+  });
+
+  return { columns, rows };
+}
+
+const TableWithChart = React.memo<{ children?: React.ReactNode }>(
+  ({ children }) => {
+    const { columns, rows } = useMemo(
+      () => extractTableData(children),
+      [children]
+    );
+
+    return (
+      <>
+        <div className="my-4 overflow-x-auto">
+          <table className="[&_th]:bg-surface w-full border-collapse [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:text-left [&_th]:font-semibold">
+            {children}
+          </table>
+        </div>
+        {columns.length > 1 && rows.length > 0 && (
+          <ChartRenderer
+            columns={columns}
+            rows={rows}
+          />
+        )}
+      </>
+    );
+  }
+);
+TableWithChart.displayName = "TableWithChart";
