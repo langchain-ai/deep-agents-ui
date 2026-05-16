@@ -16,6 +16,8 @@ import {
   Clock,
   Circle,
   FileIcon,
+  Paperclip,
+  X,
 } from "lucide-react";
 import { ChatMessage } from "@/app/components/ChatMessage";
 import type {
@@ -61,12 +63,20 @@ const getStatusIcon = (status: TodoItem["status"], className?: string) => {
   }
 };
 
+interface UploadedFile {
+  name: string;
+  mimeType: string;
+  data: string;
+}
+
 export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
   const [metaOpen, setMetaOpen] = useState<"tasks" | "files" | null>(null);
   const tasksContainerRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [input, setInput] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const { scrollRef, contentRef } = useStickToBottom();
 
   const {
@@ -86,17 +96,80 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
 
   const submitDisabled = isLoading || !assistant;
 
+  const handleFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+
+      const newFiles: UploadedFile[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+
+        await new Promise<void>((resolve) => {
+          reader.onload = () => {
+            const base64String = reader.result as string;
+            const base64Data = base64String.split(',')[1];
+
+            newFiles.push({
+              name: file.name,
+              mimeType: file.type || 'application/octet-stream',
+              data: base64Data,
+            });
+            resolve();
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      setUploadedFiles((prev) => [...prev, ...newFiles]);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    []
+  );
+
+  const removeFile = useCallback((index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   const handleSubmit = useCallback(
     (e?: FormEvent) => {
       if (e) {
         e.preventDefault();
       }
       const messageText = input.trim();
-      if (!messageText || isLoading || submitDisabled) return;
-      sendMessage(messageText);
+      if ((!messageText && uploadedFiles.length === 0) || isLoading || submitDisabled) return;
+
+      if (uploadedFiles.length > 0) {
+        const contentBlocks: any[] = [];
+
+        if (messageText) {
+          contentBlocks.push({ type: 'text', text: messageText });
+        }
+
+        uploadedFiles.forEach((file) => {
+          const isImage = file.mimeType.startsWith('image/');
+          contentBlocks.push({
+            type: isImage ? 'image' : 'file',
+            source_type: 'base64',
+            data: file.data,
+            mime_type: file.mimeType,
+          });
+        });
+
+        sendMessage(contentBlocks);
+      } else {
+        sendMessage(messageText);
+      }
+
       setInput("");
+      setUploadedFiles([]);
     },
-    [input, isLoading, sendMessage, setInput, submitDisabled]
+    [input, uploadedFiles, isLoading, sendMessage, setInput, submitDisabled]
   );
 
   const handleKeyDown = useCallback(
@@ -504,6 +577,29 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
             onSubmit={handleSubmit}
             className="flex flex-col"
           >
+            {uploadedFiles.length > 0 && (
+              <div className="border-b border-border px-[18px] py-2">
+                <div className="flex flex-wrap gap-2">
+                  {uploadedFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 rounded-md border border-border bg-sidebar px-3 py-1.5 text-xs"
+                    >
+                      <FileIcon size={14} />
+                      <span className="max-w-[200px] truncate">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="hover:text-destructive"
+                        aria-label="Remove file"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <textarea
               ref={textareaRef}
               value={input}
@@ -514,12 +610,32 @@ export const ChatInterface = React.memo<ChatInterfaceProps>(({ assistant }) => {
               rows={1}
             />
             <div className="flex justify-between gap-2 p-3">
+              <div className="flex gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  multiple
+                  aria-label="Upload files"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={submitDisabled}
+                  aria-label="Attach file"
+                >
+                  <Paperclip size={18} />
+                </Button>
+              </div>
               <div className="flex justify-end gap-2">
                 <Button
                   type={isLoading ? "button" : "submit"}
                   variant={isLoading ? "destructive" : "default"}
                   onClick={isLoading ? stopStream : handleSubmit}
-                  disabled={!isLoading && (submitDisabled || !input.trim())}
+                  disabled={!isLoading && (submitDisabled || (!input.trim() && uploadedFiles.length === 0))}
                 >
                   {isLoading ? (
                     <>
