@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "@/lib/utils";
+import type { Element, ElementContent } from "hast";
 
 interface MarkdownContentProps {
   content: string;
@@ -24,42 +25,10 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
-            code({
-              inline,
-              className,
-              children,
-              ...props
-            }: {
-              inline?: boolean;
-              className?: string;
-              children?: React.ReactNode;
-            }) {
-              const match = /language-(\w+)/.exec(className || "");
-              return !inline && match ? (
-                <SyntaxHighlighter
-                  style={oneDark}
-                  language={match[1]}
-                  PreTag="div"
-                  className="max-w-full rounded-md text-sm"
-                  wrapLines={true}
-                  wrapLongLines={true}
-                  lineProps={{
-                    style: {
-                      wordBreak: "break-all",
-                      whiteSpace: "pre-wrap",
-                      overflowWrap: "break-word",
-                    },
-                  }}
-                  customStyle={{
-                    margin: 0,
-                    maxWidth: "100%",
-                    overflowX: "auto",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  {String(children).replace(/\n$/, "")}
-                </SyntaxHighlighter>
-              ) : (
+            // In react-markdown v9, fenced code blocks render as <pre><code>...</code></pre>.
+            // We handle block code in the `pre` component and keep `code` for inline only.
+            code({ children, ...props }) {
+              return (
                 <code
                   className="bg-surface rounded-sm px-1 py-0.5 font-mono text-[0.9em]"
                   {...props}
@@ -68,10 +37,53 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 </code>
               );
             },
-            pre({ children }: { children?: React.ReactNode }) {
+            pre({ children, node }: { children?: React.ReactNode; node?: Element }) {
+              // Extract language from the <code> child's hast node
+              const codeNode = node?.children?.find(
+                (child): child is Element =>
+                  child.type === "element" && child.tagName === "code"
+              );
+              const classNames = codeNode?.properties?.className;
+              const langClass =
+                Array.isArray(classNames)
+                  ? classNames.find(
+                      (cls): cls is string =>
+                        typeof cls === "string" && /^language-/.test(cls)
+                    )
+                  : undefined;
+              const match = langClass ? /language-(\w+)/.exec(langClass) : null;
+
               return (
                 <div className="my-4 max-w-full overflow-hidden last:mb-0">
-                  {children}
+                  {match ? (
+                    <SyntaxHighlighter
+                      style={oneDark}
+                      language={match[1]}
+                      PreTag="div"
+                      className="max-w-full rounded-md text-sm"
+                      wrapLines={true}
+                      wrapLongLines={true}
+                      lineProps={{
+                        style: {
+                          wordBreak: "break-all",
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "break-word",
+                        },
+                      }}
+                      customStyle={{
+                        margin: 0,
+                        maxWidth: "100%",
+                        overflowX: "auto",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {getCodeText(codeNode).replace(/\n$/, "")}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <div className="bg-surface whitespace-pre-wrap rounded-md p-4 font-mono text-[0.875rem] [&_code]:bg-transparent [&_code]:p-0 [&_code]:rounded-none [&_code]:text-inherit">
+                      {children}
+                    </div>
+                  )}
                 </div>
               );
             },
@@ -131,5 +143,17 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
     );
   }
 );
+
+/** Extract text content from a hast element node */
+function getCodeText(node: ElementContent | Element | undefined): string {
+  if (!node) return "";
+  if ("value" in node) return node.value || "";
+  if ("children" in node) {
+    return (node.children as ElementContent[])
+      .map((child) => getCodeText(child))
+      .join("");
+  }
+  return "";
+}
 
 MarkdownContent.displayName = "MarkdownContent";
