@@ -47,7 +47,7 @@ You will see the local LangGraph deployment log to terminal:
 
 You can get the Deployment URL and Assistant ID from the terminal output and `langgraph.json` file, respectively:
 
-- Deployment URL: <http://127.0.1:2024>
+- Deployment URL: <http://127.0.0.1:2024>
 - Assistant ID: `research`
 
 **Open Deep Agents UI** at [http://localhost:3000](http://localhost:3000) and input the Deployment URL and Assistant ID:
